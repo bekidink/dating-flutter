@@ -421,62 +421,65 @@ class ChatController {
     }
   }
 
-  Future<List<Map<String, dynamic>?>> getUsersWithoutChat(
-    String currentUserId,
-  ) async {
-    try {
-      QuerySnapshot usersSnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
+ Future<List<Map<String, dynamic>?>> getUsersWithoutChat(
+  String currentUserId,
+) async {
+  try {
+    QuerySnapshot usersSnapshot =
+        await FirebaseFirestore.instance.collection('users').get();
 
-      List<Map<String, dynamic>?> usersList = [];
+    List<Map<String, dynamic>?> usersList = [];
 
-      for (QueryDocumentSnapshot userDoc in usersSnapshot.docs) {
-        if (userDoc.id != currentUserId) {
-          // Check if the current user does not have a chat with this user
-          bool doesNotHaveChat =
-              await currentUserDoesNotHaveChat(currentUserId, userDoc.id);
+    for (QueryDocumentSnapshot userDoc in usersSnapshot.docs) {
+      if (userDoc.id != currentUserId) {
+        // Check if the current user does not have a chat with this user
+        bool doesNotHaveChat =
+            await currentUserDoesNotHaveChat(currentUserId, userDoc.id);
 
-          if (doesNotHaveChat) {
-            usersList.add({
-              'id': userDoc.id,
-              'name': userDoc['name'],
-              'imageProfile': userDoc['imageProfile'],
-            });
-          }
+        if (doesNotHaveChat) {
+          usersList.add({
+            'id': userDoc.id,
+            'name': userDoc['name'],
+            'imageProfile': userDoc['imageProfile'],
+          });
         }
       }
-
-      return usersList;
-    } catch (error) {
-      print('Error fetching users: $error');
-      throw error;
     }
+
+    return usersList;
+  } catch (error) {
+    print('Error fetching users: $error');
+    throw error;
   }
+}
 
   Future<bool> currentUserDoesNotHaveChat(
-    String currentUserId,
-    String otherUserId,
-  ) async {
-    try {
-      // Check if there's a chat where both users are members
-      QuerySnapshot chatSnapshot = await FirebaseFirestore.instance
-          .collection('chats')
-          .where('memberIds', arrayContains: currentUserId)
-          .limit(1)
-          .get();
+  String currentUserId,
+  String otherUserId,
+) async {
+  try {
+    // Check if there's a chat where both users are members
+    QuerySnapshot chatSnapshot = await FirebaseFirestore.instance
+        .collection('chats')
+        .where('memberIds', arrayContains: currentUserId)
+        .get();
 
-      // Filter locally to ensure both users are in the chat
-      bool chatFound = chatSnapshot.docs
-          .where((doc) => doc['memberIds'].contains(otherUserId))
-          .isNotEmpty;
-
-      return !chatFound;
-    } catch (error) {
-      print(
-          'Error checking if current user has a chat with other user: $error');
-      throw error;
+    // Check if there's any chat with the other user
+    for (QueryDocumentSnapshot chatDoc in chatSnapshot.docs) {
+      List<dynamic> memberIds = chatDoc['memberIds'];
+      if (memberIds.contains(otherUserId)) {
+        // A chat between current user and other user exists
+        return false;
+      }
     }
+
+    // No chat found between current user and other user
+    return true;
+  } catch (error) {
+    print('Error checking if current user has a chat with other user: $error');
+    throw error;
   }
+}
 
   Future<void> deleteMessage(
       String chatId, String messageId, String? imageUrl) async {

@@ -41,7 +41,7 @@ class _ChatListPageState extends State<ChatListPage> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(6.0),
+            padding: const EdgeInsets.all(2.0),
             child: TextField(
               controller: searchController,
               onChanged: _filterChats,
@@ -123,8 +123,14 @@ class _ChatListPageState extends State<ChatListPage> {
                                           as Map<String, dynamic>;
                                   String userName = userData['name'];
                                   String userImage = userData['imageProfile'];
-
-                                  return Card(
+                           bool hasContent =  lastMessage.content.isNotEmpty ;
+                           bool check=lastMessage.type == 'text' && lastMessage.content.isNotEmpty;
+                           String textToDisplay = lastMessage.type == 'text' && lastMessage.content.isNotEmpty ? lastMessage.content : '';
+                                 if (check && lastMessage.content.length > 10) {
+        textToDisplay = '${lastMessage.content.substring(0, 20)}...';
+      }
+                                
+                                  return hasContent ? Card(
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
                                             BorderRadius.circular(15)),
@@ -145,7 +151,7 @@ class _ChatListPageState extends State<ChatListPage> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             lastMessage.type == 'text'
-                                                ? Text('${lastMessage.content}')
+                                                ? Text(textToDisplay)
                                                 : lastMessage.senderId ==
                                                         currentUserId
                                                     ? Text('you sent a picture')
@@ -203,7 +209,7 @@ class _ChatListPageState extends State<ChatListPage> {
                                                 ),
                                               ),
                                             )),
-                                  );
+                                  ): SizedBox();
                                 }
                               },
                             );

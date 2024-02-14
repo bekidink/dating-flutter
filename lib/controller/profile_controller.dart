@@ -59,19 +59,25 @@ class ProfileController extends GetxController {
       if (kDebugMode) {
         print(chosenGender);
       }
-      usersProfileList.bindStream(FirebaseFirestore.instance
-          .collection("users")
-          .where("uid", isNotEqualTo: FirebaseAuth.instance.currentUser!.uid)
-          .where("age", isGreaterThanOrEqualTo: int.parse(chosenAge.toString()))
-          .where("gender", isEqualTo: chosenGender!.toLowerCase().toString())
-          .snapshots()
-          .map((QuerySnapshot queryDataSnapshot) {
-        List<Person> profileList = [];
-        for (var eachProfile in queryDataSnapshot.docs) {
-          profileList.add(Person.fromDataSnapshot(eachProfile));
-        }
-        return profileList;
-      }));
+     String currentUserUid = FirebaseAuth.instance.currentUser!.uid;
+
+usersProfileList.bindStream(
+  FirebaseFirestore.instance
+      .collection("users")
+      .where("age", isGreaterThanOrEqualTo: int.parse(chosenAge.toString()))
+      .where("gender", isEqualTo: chosenGender!.toLowerCase().toString())
+      .snapshots()
+      .map((QuerySnapshot queryDataSnapshot) {
+    List<Person> profileList = [];
+    for (var eachProfile in queryDataSnapshot.docs) {
+      if (eachProfile["uid"] != currentUserUid) {
+        profileList.add(Person.fromDataSnapshot(eachProfile));
+      }
+    }
+    return profileList;
+  })
+);
+
     }
   }
 

@@ -279,13 +279,17 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:intl/intl.dart';
 import 'package:gallery_saver/gallery_saver.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../controller/message_controller.dart';
 import '../../models/chat.dart';
 import '../../models/message.dart';
@@ -628,42 +632,18 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                       name: "Save Image",
                       onTap: () async {
-                        try {
-                          var status = await Permission.storage.status;
-                          if (status == PermissionStatus.granted) {
-                            File imageFile =
-                                await _chatController.downloadImage(content);
-                            print(imageFile);
-                            bool? success =
-                                await GallerySaver.saveImage(imageFile.path);
-                            Navigator.pop(context);
+                       try {
+      http.Response response = await http.get(Uri.parse(imageProfile));
+      Uint8List bytes = response.bodyBytes;
 
-                            if (success == true) {
-                              Get.snackbar(
-                                "Image",
-                                "Image saved to gallery successfully",
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            } else {
-                              Get.snackbar(
-                                "Image",
-                                "Failed to save image to gallery",
-                                snackPosition: SnackPosition.BOTTOM,
-                              );
-                            }
-                          } else {
-                            await Permission.storage.request();
-                          }
-                        } catch (e) {
-                          if (kDebugMode) {
-                            print('Error saving image: $e');
-                          }
-                          Get.snackbar(
-                            "Error",
-                            "Failed to save image. Please check permissions.",
-                            snackPosition: SnackPosition.BOTTOM,
-                          );
-                        }
+      await ImageGallerySaver.saveImage(bytes);
+
+      // Show a success message
+       Get.snackbar("Image Download", "Image downloaded successfully");
+    } catch (error) {
+      // Show an error message
+     Get.snackbar("Image Download", "Image failed downloaded ");
+    }
                       },
                     ),
               Divider(),

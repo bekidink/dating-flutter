@@ -222,18 +222,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
                                         style: TextStyle(
                                             color: Colors.white, fontSize: 14),
                                       )),
-                                  ElevatedButton(
-                                      onPressed: () {},
-                                      style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.white30,
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(16))),
-                                      child: Text(
-                                        eachProfileInfo.religion.toString(),
-                                        style: TextStyle(
-                                            color: Colors.white, fontSize: 14),
-                                      ))
+                                 
                                 ],
                               ),
                             ],
