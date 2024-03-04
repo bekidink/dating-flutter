@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date/global.dart';
+import 'package:date/view/auth/AuthScreen.dart';
 import 'package:date/view/auth/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -128,7 +129,7 @@ class AuthenticationController extends GetxController {
 
   checkIfUserIsLoggedIn(User? currentUser) {
     if (currentUser == null) {
-      Get.to(LoginScreen());
+      Get.to(AuthScreen());
     } else {
       Get.to(HomeScreen());
     }

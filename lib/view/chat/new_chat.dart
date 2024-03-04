@@ -65,7 +65,8 @@ class NewChatPage extends StatelessWidget {
                   horizontal: MediaQuery.of(context).size.width * .04,
                   vertical: 4),
               child: Slidable(
-                startActionPane: ActionPane(motion: StretchMotion(), children: [
+                startActionPane:
+                    ActionPane(motion: const StretchMotion(), children: [
                   SlidableAction(
                     onPressed: (context) => _onDismissed(),
                     icon: Icons.share,

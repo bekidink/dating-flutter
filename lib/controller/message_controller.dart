@@ -162,13 +162,52 @@ class ChatController {
       // Get the automatically generated message ID
       String messageId = newMessageRef.id;
       Message newMessage = Message(
-        id: newMessageRef.id,
-        content: urlOfDownloadedImage,
-        seen: false,
-        type: 'image',
-        senderId: FirebaseAuth.instance.currentUser!.uid,
-        timestamp: Timestamp.now(),
-      );
+          id: newMessageRef.id,
+          content: urlOfDownloadedImage,
+          seen: false,
+          type: 'image',
+          senderId: FirebaseAuth.instance.currentUser!.uid,
+          timestamp: Timestamp.now(),
+          duration: '');
+
+      await addMessageToChat(chatId, newMessage);
+
+      print('Message added successfully with ID: $messageId');
+    } catch (error) {
+      print('Error adding message: $error');
+      throw error; // Handle the error as per your requirement
+    }
+  }
+
+  Future<void> sendMessageWithVoice(
+      String chatId, String senderId, String url, String duration) async {
+    try {
+      // Reference to the specific collection of messages within the chat
+      // String urlOfDownloadedImage = await uploadImageToStorage(profileImage!);
+
+      CollectionReference messagesCollection =
+          _firestore.collection('chats').doc(chatId).collection('messages');
+
+      // Add the new message to the collection and get the automatically generated ID
+      DocumentReference newMessageRef = await messagesCollection.add({
+        'content': url,
+        'type': 'voice',
+        'seen': false,
+        'senderId': senderId,
+        'timestamp': Timestamp.fromDate(DateTime.now().toUtc()),
+        'duration': duration
+      });
+
+      // Get the automatically generated message ID
+      String messageId = newMessageRef.id;
+      Message newMessage = Message(
+          id: newMessageRef.id,
+          content: url,
+          seen: false,
+          type: 'image',
+          senderId: FirebaseAuth.instance.currentUser!.uid,
+          timestamp: Timestamp.now(),
+          duration: duration);
 
       await addMessageToChat(chatId, newMessage);
 
@@ -189,14 +228,14 @@ class ChatController {
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         return Message(
-          // Build your Message object based on the document data
-          id: doc.id,
-          content: doc['content'],
-          seen: doc['seen'],
-          type: doc['type'],
-          senderId: doc['senderId'],
-          timestamp: doc['timestamp'],
-        );
+            // Build your Message object based on the document data
+            id: doc.id,
+            content: doc['content'],
+            seen: doc['seen'],
+            type: doc['type'],
+            senderId: doc['senderId'],
+            timestamp: doc['timestamp'],
+            duration: doc['duration']);
       }).toList();
     });
   }
@@ -222,13 +261,13 @@ class ChatController {
 
       // Create a Message object from the updated document
       final updatedMessage = Message(
-        id: updatedDoc.id,
-        content: updatedDoc['content'],
-        type: updatedDoc['type'],
-        seen: updatedDoc['seen'],
-        senderId: updatedDoc['senderId'],
-        timestamp: updatedDoc['timestamp'],
-      );
+          id: updatedDoc.id,
+          content: updatedDoc['content'],
+          type: updatedDoc['type'],
+          seen: updatedDoc['seen'],
+          senderId: updatedDoc['senderId'],
+          timestamp: updatedDoc['timestamp'],
+          duration: updatedDoc['duration']);
 
       return updatedMessage;
     } catch (e) {
@@ -314,13 +353,13 @@ class ChatController {
       // Get the automatically generated message ID
       String messageId = newMessageRef.id;
       Message newMessage = Message(
-        id: newMessageRef.id,
-        content: content,
-        seen: false,
-        type: 'text',
-        senderId: FirebaseAuth.instance.currentUser!.uid,
-        timestamp: Timestamp.now(),
-      );
+          id: newMessageRef.id,
+          content: content,
+          seen: false,
+          type: 'text',
+          senderId: FirebaseAuth.instance.currentUser!.uid,
+          timestamp: Timestamp.now(),
+          duration: '');
 
       await addMessageToChat(chatId, newMessage);
       sendPushNotification(token, content);
@@ -421,65 +460,72 @@ class ChatController {
     }
   }
 
- Future<List<Map<String, dynamic>?>> getUsersWithoutChat(
-  String currentUserId,
-) async {
-  try {
-    QuerySnapshot usersSnapshot =
-        await FirebaseFirestore.instance.collection('users').get();
+  Future<List<Map<String, dynamic>?>> getUsersWithoutChat(
+    String currentUserId,
+  ) async {
+    try {
+      QuerySnapshot usersSnapshot =
+          await FirebaseFirestore.instance.collection('users').get();
 
-    List<Map<String, dynamic>?> usersList = [];
+      List<Map<String, dynamic>?> usersList = [];
 
-    for (QueryDocumentSnapshot userDoc in usersSnapshot.docs) {
-      if (userDoc.id != currentUserId) {
-        // Check if the current user does not have a chat with this user
-        bool doesNotHaveChat =
-            await currentUserDoesNotHaveChat(currentUserId, userDoc.id);
+      for (QueryDocumentSnapshot userDoc in usersSnapshot.docs) {
+        if (userDoc.id != currentUserId) {
+          // Check if the current user does not have a chat with this user
+          bool doesNotHaveChat =
+              await currentUserDoesNotHaveChat(currentUserId, userDoc.id);
 
-        if (doesNotHaveChat) {
-          usersList.add({
-            'id': userDoc.id,
-            'name': userDoc['name'],
-            'imageProfile': userDoc['imageProfile'],
-          });
+          if (doesNotHaveChat) {
+            usersList.add({
+              'id': userDoc.id,
+              'name': userDoc['name'],
+              'imageProfile': userDoc['imageProfile'],
+            });
+          }
         }
       }
-    }
 
-    return usersList;
-  } catch (error) {
-    print('Error fetching users: $error');
-    throw error;
+      return usersList;
+    } catch (error) {
+      print('Error fetching users: $error');
+      throw error;
+    }
   }
-}
 
   Future<bool> currentUserDoesNotHaveChat(
-  String currentUserId,
-  String otherUserId,
-) async {
-  try {
-    // Check if there's a chat where both users are members
-    QuerySnapshot chatSnapshot = await FirebaseFirestore.instance
-        .collection('chats')
-        .where('memberIds', arrayContains: currentUserId)
-        .get();
+    String currentUserId,
+    String otherUserId,
+  ) async {
+    try {
+      // Check if there's a chat where both users are members
+      QuerySnapshot chatSnapshot = await FirebaseFirestore.instance
+          .collection('chats')
+          .where('memberIds', arrayContains: currentUserId)
+          .get();
 
-    // Check if there's any chat with the other user
-    for (QueryDocumentSnapshot chatDoc in chatSnapshot.docs) {
-      List<dynamic> memberIds = chatDoc['memberIds'];
-      if (memberIds.contains(otherUserId)) {
-        // A chat between current user and other user exists
-        return false;
+      // Check if there's any chat with the other user
+      for (QueryDocumentSnapshot chatDoc in chatSnapshot.docs) {
+        List<dynamic> memberIds = chatDoc['memberIds'];
+        if (memberIds.contains(otherUserId)) {
+          // A chat between current user and other user exists
+          return false;
+        }
       }
-    }
 
-    // No chat found between current user and other user
-    return true;
-  } catch (error) {
-    print('Error checking if current user has a chat with other user: $error');
-    throw error;
+      // No chat found between current user and other user
+      return true;
+    } catch (error) {
+      print(
+          'Error checking if current user has a chat with other user: $error');
+      throw error;
+    }
   }
-}
+
+  UploadTask uploadAudio(var audioFile, String fileName) {
+    Reference reference = _storage.ref().child(fileName);
+    UploadTask uploadTask = reference.putFile(audioFile);
+    return uploadTask;
+  }
 
   Future<void> deleteMessage(
       String chatId, String messageId, String? imageUrl) async {
@@ -588,6 +634,17 @@ class ChatController {
       );
     } catch (e) {
       // Handle errors here
+    }
+  }
+
+  Future<void> deleteChat(String chatId) async {
+    try {
+      // Delete the chat document from the Firestore 'chats' collection
+      await _firestore.collection('chats').doc(chatId).delete();
+      print('Chat deleted successfully');
+    } catch (error) {
+      print('Error deleting chat: $error');
+      throw error; // Handle the error as per your requirement
     }
   }
 }

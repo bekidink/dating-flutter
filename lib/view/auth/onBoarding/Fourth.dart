@@ -7,14 +7,14 @@ import 'package:flutter/material.dart';
 import '../../../services/interest.dart';
 import '../../../widgets/custom_text_field.dart';
 
-class ThridPage extends StatefulWidget {
-  ThridPage();
+class FourthPage extends StatefulWidget {
+  FourthPage();
 
   @override
-  State<ThridPage> createState() => _ThridPageState();
+  State<FourthPage> createState() => _FourthPageState();
 }
 
-class _ThridPageState extends State<ThridPage> {
+class _FourthPageState extends State<FourthPage> {
   List<Interest> availableInterests = [
     Interest(name: 'Photography', image: 'assets/images/camera.png'),
     Interest(name: 'Shopping', image: 'assets/images/weixin-market.png'),

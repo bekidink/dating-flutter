@@ -49,7 +49,7 @@ dependencies:
   cloud_firestore: ^4.14.0
   flutter_chat_ui: ^1.6.10
   flutter_chat_types: ^3.6.2
-  uuid: ^4.3.3
+  uuid: 3.0.7
   file_picker: ^6.1.1
   mime: ^1.0.4
   open_filex: ^4.3.4
@@ -63,6 +63,20 @@ dependencies:
   gallery_saver: ^2.3.2
   flutter_slidable: ^3.0.1
   image_gallery_saver: ^2.0.3
+  audioplayers: ^5.2.1
+  swipe_cards: ^2.0.0+1
+  flutter_sound: ^8.0.0+2
+  just_audio: ^0.9.36
+  sizer: ^2.0.15
+  record_mp3: ^3.0.0
+  getwidget: ^4.0.0
+  uic: ^0.9.1
+  country_state_city: ^0.1.6
+  country_state_city_picker: ^1.2.8
+  gender_picker: ^1.1.0
+  extended_phone_number_input: ^1.0.2
+  google_sign_in: ^6.2.1
+  calendar_date_picker2: ^0.5.5
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -87,7 +101,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
-  #   - images/a_dot_ham.jpeg
+    - assets/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

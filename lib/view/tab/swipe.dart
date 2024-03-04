@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controller/profile_controller.dart';
+import 'package:swipe_cards/draggable_card.dart';
+import 'package:swipe_cards/swipe_cards.dart';
+
+import '../../services/swipe_content.dart';
 
 class SwipeScreen extends StatefulWidget {
   const SwipeScreen({super.key});
@@ -16,90 +20,14 @@ class SwipeScreen extends StatefulWidget {
 }
 
 class _SwipeScreenState extends State<SwipeScreen> {
-  ProfileController profileController = Get.put(ProfileController());
+  late ProfileController profileController;
   String senderName = "";
   bool favorite = false;
   String receiverToken = '';
-  applyFilter() {
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: Text("Matching Filter"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('I am looking for a'),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DropdownButton<String>(
-                      items: ['Male', 'Female'].map((value) {
-                        return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(
-                              value,
-                              style: TextStyle(fontWeight: FontWeight.w500),
-                            ));
-                      }).toList(),
-                      onChanged: (String? value) {
-                        setState(() {
-                          chosenGender = value;
-                        });
-                      },
-                      hint: Text("select gender"),
-                      value: chosenGender,
-                    ),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  Text("who's age equal or above"),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DropdownButton<String>(
-                      items: ['20', '30', '40', '45'].map((value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(
-                            value,
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (String? value) {
-                        setState(() {
-                          chosenAge = value;
-                        });
-                      },
-                      hint: Text("select age"),
-                      value: chosenAge,
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                ElevatedButton(
-                    onPressed: () {
-                      profileController.getResults();
-
-                      Get.back();
-                    },
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16))),
-                    child: Text(
-                      'Done',
-                      style: TextStyle(color: Colors.white),
-                    ))
-              ],
-            );
-          });
-        });
-  }
-
+  // ignore: prefer_final_fields
+  List<SwipeItem> _swipeItems = <SwipeItem>[];
+  MatchEngine? _matchEngine;
+  bool _stackFinished = false;
   readCurrentUserData() async {
     await FirebaseFirestore.instance
         .collection("users")
@@ -108,8 +36,41 @@ class _SwipeScreenState extends State<SwipeScreen> {
         .then((dataSnapshot) {
       setState(() {
         senderName = dataSnapshot.data()!["name"].toString();
+        print(senderName);
       });
+      buildSwipeItems();
     });
+  }
+
+  void buildSwipeItems() {
+    _swipeItems.clear();
+
+    for (final eachProfileInfo in profileController.allUsersProfileList) {
+      _swipeItems.add(SwipeItem(
+          content: Content(
+            name: eachProfileInfo.name.toString(),
+            imageURL: eachProfileInfo.imageProfile.toString(),
+            age: eachProfileInfo.age.toString(),
+            bio: eachProfileInfo.bio.toString(),
+            uid: eachProfileInfo.uid.toString(),
+          ),
+          likeAction: () async {
+            await retriveReceiver(eachProfileInfo.uid.toString());
+            profileController.likeSentAndFavoriteReceived(
+                eachProfileInfo.uid.toString(), senderName, receiverToken);
+          },
+          nopeAction: () {},
+          superlikeAction: () async {
+            await retriveReceiver(eachProfileInfo.uid.toString());
+            profileController.favoriteSentAndFavoriteReceived(
+                eachProfileInfo.uid.toString(), senderName, receiverToken);
+          },
+          onSlideUpdate: (SlideRegion? region) async {
+            print("Region $region");
+          }));
+    }
+
+    setState(() {}); // Trigger rebuild after building swipe items
   }
 
   retriveReceiver(String uid) async {
@@ -128,166 +89,254 @@ class _SwipeScreenState extends State<SwipeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    profileController = Get.put(ProfileController());
+    print(profileController.allUsersProfileList.length);
+
     readCurrentUserData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        // appBar: CustomAppBar(title: 'DISCOVER'),
-        body: Obx(() {
-      return PageView.builder(
-        itemCount: profileController.allUsersProfileList.length,
-        controller: PageController(initialPage: 0, viewportFraction: 1),
-        scrollDirection: Axis.horizontal,
-        itemBuilder: (context, index) {
-          final eachProfileInfo = profileController.allUsersProfileList[index];
-          return Stack(
-            fit: StackFit.expand,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                      image: DecorationImage(
-                          image: CachedNetworkImageProvider(
-                              eachProfileInfo.imageProfile.toString()),
-                          fit: BoxFit.cover)),
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Column(
-                      children: [
-                        Align(
-                          alignment: Alignment.topRight,
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 0),
-                            child: IconButton(
-                                onPressed: () {
-                                  applyFilter();
-                                },
-                                icon: Icon(
-                                  Icons.filter_list,
-                                  size: 30,
-                                  color: Colors.pink,
-                                )),
-                          ),
-                        ),
-                        Spacer(),
-                        GestureDetector(
-                          onTap: () async {
-                            await retriveReceiver(
-                                eachProfileInfo.uid.toString());
-                            profileController.ViewSentAndViewReceived(
-                                eachProfileInfo.uid.toString(),
-                                senderName,
-                                receiverToken);
-                            Get.to(UserDetailScreen(
-                              userID: eachProfileInfo.uid.toString(),
-                            ));
-                          },
-                          child: Column(
-                            children: [
-                              Text(
-                                eachProfileInfo.name.toString(),
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    letterSpacing: 4,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                eachProfileInfo.age.toString() +
-                                    "⦿" +
-                                    eachProfileInfo.city.toString(),
-                                style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    letterSpacing: 4,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              SizedBox(
-                                height: 4,
-                              ),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ElevatedButton(
-                                      onPressed: () {},
-                                      style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.white30,
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(16))),
-                                      child: Text(
-                                        eachProfileInfo.country.toString(),
-                                        style: TextStyle(
-                                            color: Colors.white, fontSize: 14),
-                                      )),
-                                 
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(
-                          height: 14,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            GestureDetector(
-                                onTap: () async {
-                                  setState(() {
-                                    favorite = !favorite;
-                                  });
-                                  await retriveReceiver(
-                                      eachProfileInfo.uid.toString());
-                                  profileController
-                                      .favoriteSentAndFavoriteReceived(
-                                          eachProfileInfo.uid.toString(),
-                                          senderName,
-                                          receiverToken);
-                                },
-                                child: Icon(
-                                  Icons.favorite,
-                                  size: 65,
-                                  color: Colors.pinkAccent,
-                                )),
-                            // GestureDetector(
-                            //     onTap: () {
-                            //       // Get.to(ChatPage(
-                            //       //   uid: eachProfileInfo.uid.toString(),
-                            //       // ));
-                            //     },
-                            //     child: Icon(
-                            //       Icons.chat_bubble,
-                            //       size: 65,
-                            //       color: Colors.blue,
-                            //     )),
-                            GestureDetector(
-                                onTap: () async {
-                                  await retriveReceiver(
-                                      eachProfileInfo.uid.toString());
-                                  profileController.likeSentAndFavoriteReceived(
-                                      eachProfileInfo.uid.toString(),
-                                      senderName,
-                                      receiverToken);
-                                },
-                                child: Icon(
-                                  Icons.star,
-                                  size: 80,
-                                  color: Colors.purple,
-                                ))
-                          ],
-                        )
-                      ],
-                    ),
+              Text(
+                "Habesha",
+                style: TextStyle(color: Colors.pink, fontSize: 17),
+              ),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 50,
                   ),
-                ),
+                  Text(
+                    "dating",
+                    style: TextStyle(color: Colors.pink, fontSize: 17),
+                  ),
+                ],
               ),
             ],
-          );
-        },
-      );
-    }));
+          ),
+          actions: [],
+        ),
+        body: Container(
+            child: Stack(children: [
+          Container(
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
+            height: MediaQuery.of(context).size.height - kToolbarHeight,
+            margin: EdgeInsetsDirectional.only(
+              bottom: 25,
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+            child: SwipeCards(
+              matchEngine: MatchEngine(swipeItems: _swipeItems),
+              itemBuilder: (BuildContext context, int index) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Positioned.fill(
+                        left: 0,
+                        top: 0.0,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              image: DecorationImage(
+                                  image: CachedNetworkImageProvider(
+                                      _swipeItems[index].content.imageURL),
+                                  fit: BoxFit.cover)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(3.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Spacer(),
+                                GestureDetector(
+                                    onTap: () async {},
+                                    child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                _swipeItems[index]
+                                                    .content
+                                                    .name
+                                                    .toString(),
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 24,
+                                                    letterSpacing: 4,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              Text(
+                                                _swipeItems[index]
+                                                    .content
+                                                    .age
+                                                    .toString(),
+                                                // eachProfileInfo.city.toString(),
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 24,
+                                                    letterSpacing: 4,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            ],
+                                          ),
+                                          SizedBox(
+                                            height: 4,
+                                          ),
+                                          ElevatedButton(
+                                              onPressed: () {},
+                                              style: ElevatedButton.styleFrom(
+                                                  backgroundColor:
+                                                      Colors.white30,
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              16))),
+                                              child: Text(
+                                                _swipeItems[index]
+                                                    .content
+                                                    .bio
+                                                    .toString(),
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14),
+                                              )),
+                                        ]))
+                              ],
+                            ),
+                          ),
+                        ))
+                  ],
+                );
+              },
+              onStackFinished: () {
+                setState(() {
+                  _stackFinished = true;
+                });
+              },
+              itemChanged: (SwipeItem item, int index) {
+                print("item: ${item.content.name}, index: $index");
+              },
+              leftSwipeAllowed: true,
+              rightSwipeAllowed: true,
+              upSwipeAllowed: true,
+              fillSpace: true,
+              likeTag: Container(
+                margin: const EdgeInsets.all(15.0),
+                padding: const EdgeInsets.all(3.0),
+                decoration:
+                    BoxDecoration(border: Border.all(color: Colors.green)),
+                child: Icon(
+                  Icons.star,
+                  color: Colors.red,
+                ),
+              ),
+              nopeTag: Container(
+                margin: const EdgeInsets.all(15.0),
+                decoration:
+                    BoxDecoration(border: Border.all(color: Colors.red)),
+                child: Text('Nope'),
+              ),
+              superLikeTag: Container(
+                margin: const EdgeInsets.all(15.0),
+                padding: const EdgeInsets.all(3.0),
+                decoration:
+                    BoxDecoration(border: Border.all(color: Colors.orange)),
+                child: Text('Super Like'),
+              ),
+            ),
+          ),
+          Visibility(
+            visible: _stackFinished,
+            child: Center(
+              child: Text(
+                "Stack Finished",
+                style: TextStyle(color: Colors.pink),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  margin: EdgeInsets.only(left: 20),
+                  decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.grey.withOpacity(.2),
+                            blurRadius: 1,
+                            spreadRadius: 4)
+                      ],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20)),
+                  child: InkWell(
+                      onTap: () {
+                        _matchEngine!.currentItem?.nope();
+                      },
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.red,
+                        size: 40,
+                      )),
+                ),
+                Container(
+                  margin: EdgeInsets.only(left: 20),
+                  decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(.2),
+                          blurRadius: 4,
+                        )
+                      ],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20)),
+                  child: InkWell(
+                      onTap: () {
+                        _matchEngine!.currentItem?.superLike();
+                      },
+                      child: Icon(
+                        Icons.favorite,
+                        color: Colors.pink,
+                        size: 40,
+                      )),
+                ),
+                Container(
+                  margin: EdgeInsets.only(right: 20),
+                  decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(.2),
+                          blurRadius: 4,
+                        )
+                      ],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20)),
+                  child: InkWell(
+                      onTap: () {
+                        _matchEngine!.currentItem?.like();
+                      },
+                      child: Icon(
+                        Icons.star,
+                        color: Colors.pink,
+                        size: 40,
+                      )),
+                )
+              ],
+            ),
+          )
+        ])));
   }
 }

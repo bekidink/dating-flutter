@@ -284,17 +284,24 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:intl/intl.dart';
 import 'package:gallery_saver/gallery_saver.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:record_mp3/record_mp3.dart';
+import '../../controller/audio_controller.dart';
 import '../../controller/message_controller.dart';
 import '../../models/chat.dart';
 import '../../models/message.dart';
 import '../../widgets/chat_bubble.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
+import 'package:audioplayers/audioplayers.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ChatPage extends StatefulWidget {
@@ -319,6 +326,167 @@ class _ChatPageState extends State<ChatPage> {
   String imageProfile = '';
   String name = '';
   String token = '';
+  late FlutterSoundRecorder _audioRecorder;
+  bool _isRecording = false;
+  String _recordingPath = '';
+  String? _currentAudioUrl;
+  bool isCurrentlyPlaying = false;
+  AudioPlayer _audioPlayer = AudioPlayer();
+  AudioPlayer audioPlayer = AudioPlayer();
+  bool _isUploaded = false;
+  ScrollController _scrollController = new ScrollController();
+  AudioController audioController = Get.put(AudioController());
+  final FocusNode focusNode = FocusNode();
+  String audioURL = "";
+
+  int _limit = 20;
+  int _limitIncrement = 20;
+  List<QueryDocumentSnapshot> listMessage = [];
+  void _initialize() async {
+    try {
+      await _audioRecorder.openAudioSession();
+    } catch (e) {
+      print('Error initializing recorder: $e');
+    }
+  }
+
+  void _scrollToBottom() {
+    // if (_scrollController.hasClients) {
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent + 300,
+      duration: const Duration(milliseconds: 30),
+      curve: Curves.easeInOut,
+    );
+    // }
+  }
+
+  Future<bool> checkPermission() async {
+    if (!await Permission.microphone.isGranted) {
+      PermissionStatus status = await Permission.microphone.request();
+      if (status != PermissionStatus.granted) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void startRecord() async {
+    bool hasPermission = await checkPermission();
+    if (hasPermission) {
+      recordFilePath = await getFilePath();
+      RecordMp3.instance.start(recordFilePath, (type) {
+        setState(() {});
+      });
+    } else {}
+    setState(() {});
+  }
+
+  void stopRecord() async {
+    bool stop = RecordMp3.instance.stop();
+    audioController.end.value = DateTime.now();
+    audioController.calcDuration();
+    var ap = AudioPlayer();
+    await ap.play(AssetSource("Notification.mp3"));
+    ap.onPlayerComplete.listen((a) {});
+    if (stop) {
+      audioController.isRecording.value = false;
+      audioController.isSending.value = true;
+      await uploadAudio();
+    }
+  }
+
+  int i = 0;
+
+  Future<String> getFilePath() async {
+    Directory storageDirectory = await getApplicationDocumentsDirectory();
+    String sdPath =
+        "${storageDirectory.path}/record${DateTime.now().microsecondsSinceEpoch}.acc";
+    var d = Directory(sdPath);
+    if (!d.existsSync()) {
+      d.createSync(recursive: true);
+    }
+    return "$sdPath/test_${i++}.mp3";
+  }
+
+  uploadAudio() async {
+    UploadTask uploadTask = _chatController.uploadAudio(File(recordFilePath),
+        "audio/${DateTime.now().millisecondsSinceEpoch.toString()}");
+    try {
+      TaskSnapshot snapshot = await uploadTask;
+      audioURL = await snapshot.ref.getDownloadURL();
+      String strVal = audioURL.toString();
+      setState(() {
+        audioController.isSending.value = false;
+        _chatController.sendMessageWithVoice(widget.chat.id,
+            widget.currentUserId, strVal, audioController.total);
+      });
+    } on FirebaseException catch (e) {
+      setState(() {
+        audioController.isSending.value = false;
+      });
+      // Fluttertoast.showToast(msg: e.message ?? e.toString());
+    }
+  }
+
+  late String recordFilePath;
+  // Future<void> _startRecording() async {
+  //   try {
+  //     if (!_isRecording) {
+  //       Directory tempDir = await getTemporaryDirectory();
+  //       _recordingPath =
+  //           '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.aac';
+  //       await _audioRecorder.startRecorder(
+  //         toFile: _recordingPath,
+  //         codec: Codec.aacADTS,
+  //       );
+  //       setState(() {
+  //         _isRecording = true;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     print('Error starting recording: $e');
+  //   }
+  // }
+
+  // Future<void> _stopRecording() async {
+  //   if (_isRecording) {
+  //     try {
+  //       final path = await _audioRecorder.stopRecorder();
+  //       final downloadURL = await _uploadToFirebase(); // Get download URL
+  //       print('Download URL: $downloadURL');
+  //       setState(() {
+  //         _isRecording = false;
+  //         _recordingPath = path ?? '';
+  //       });
+  //     } catch (err) {
+  //       print('Failed to stop recording: $err');
+  //     }
+  //   }
+  // }
+
+  Future<String> _uploadToFirebase() async {
+    try {
+      final File file = File(_recordingPath);
+      final fileName = file.path.split('/').last;
+      final firebase_storage.Reference ref =
+          firebase_storage.FirebaseStorage.instance.ref().child(fileName);
+      final uploadTask = ref.putFile(file);
+
+      // Wait for the upload to complete and then get the download URL
+      final snapshot = await uploadTask.whenComplete(() {});
+      final downloadURL = await snapshot.ref.getDownloadURL();
+
+      setState(() {
+        _isUploaded = true;
+      });
+
+      return downloadURL;
+    } catch (err) {
+      print('Failed to upload recording: $err');
+      return ''; // Return empty string if upload fails
+    }
+  }
+
   retrieveUserInfo() async {
     print('user widget:$widget.uid');
     await FirebaseFirestore.instance
@@ -341,14 +509,35 @@ class _ChatPageState extends State<ChatPage> {
     // TODO: implement initState
     super.initState();
     retrieveUserInfo();
+
     _chatController.updateSeenStatusOnChatEnter(widget.chat.id);
+    _audioRecorder = FlutterSoundRecorder();
+    _initialize();
+
+    _scrollController = ScrollController();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  _scrollListener() {
+    if (_scrollController.offset >=
+            _scrollController.position.maxScrollExtent &&
+        !_scrollController.position.outOfRange &&
+        _limit <= listMessage.length) {
+      setState(() {
+        _limit += _limitIncrement;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (kDebugMode) {
-      print(widget.currentUserId);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(_scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.fastOutSlowIn);
+      }
+    });
     return GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SafeArea(
@@ -480,6 +669,7 @@ class _ChatPageState extends State<ChatPage> {
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(child: Text('No Messages Yet'));
         }
+        // listMessage = snapshot.data.length;
 
         final messages = snapshot.data!;
 
@@ -490,6 +680,8 @@ class _ChatPageState extends State<ChatPage> {
         }
 
         return ListView.builder(
+            shrinkWrap: true,
+            controller: _scrollController,
             itemCount: messages.length,
             itemBuilder: (context, index) {
               var alignment = (messages[index].senderId == widget.currentUserId)
@@ -551,21 +743,35 @@ class _ChatPageState extends State<ChatPage> {
                                           fontSize: 16, color: Colors.white),
                                     ),
                                   )
-                                : ClipRRect(
-                                    borderRadius: BorderRadius.circular(15),
-                                    child: CachedNetworkImage(
-                                      width: 250,
-                                      imageUrl: messages[index].content,
-                                      placeholder: (context, url) =>
-                                          const Padding(
-                                        padding: EdgeInsets.all(8.0),
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2),
+                                : messages[index].type == 'voice'
+                                    ? _audio(
+                                        message: messages[index].content,
+                                        isCurrentUser:
+                                            messages[index].senderId ==
+                                                    widget.currentUserId
+                                                ? true
+                                                : false,
+                                        index: index,
+                                        time: messages[index]
+                                            .timestamp
+                                            .toString(),
+                                        duration:
+                                            messages[index].duration.toString())
+                                    : ClipRRect(
+                                        borderRadius: BorderRadius.circular(15),
+                                        child: CachedNetworkImage(
+                                          width: 250,
+                                          imageUrl: messages[index].content,
+                                          placeholder: (context, url) =>
+                                              const Padding(
+                                            padding: EdgeInsets.all(8.0),
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2),
+                                          ),
+                                          errorWidget: (context, url, error) =>
+                                              const Icon(Icons.image, size: 70),
+                                        ),
                                       ),
-                                      errorWidget: (context, url, error) =>
-                                          const Icon(Icons.image, size: 70),
-                                    ),
-                                  ),
                             Text(DateFormat('hh:mm a')
                                 .format(messages[index].timestamp.toDate())),
                             messages[index].seen
@@ -632,18 +838,21 @@ class _ChatPageState extends State<ChatPage> {
                       ),
                       name: "Save Image",
                       onTap: () async {
-                       try {
-      http.Response response = await http.get(Uri.parse(imageProfile));
-      Uint8List bytes = response.bodyBytes;
+                        try {
+                          http.Response response =
+                              await http.get(Uri.parse(imageProfile));
+                          Uint8List bytes = response.bodyBytes;
 
-      await ImageGallerySaver.saveImage(bytes);
+                          await ImageGallerySaver.saveImage(bytes);
 
-      // Show a success message
-       Get.snackbar("Image Download", "Image downloaded successfully");
-    } catch (error) {
-      // Show an error message
-     Get.snackbar("Image Download", "Image failed downloaded ");
-    }
+                          // Show a success message
+                          Get.snackbar("Image Download",
+                              "Image downloaded successfully");
+                        } catch (error) {
+                          // Show an error message
+                          Get.snackbar(
+                              "Image Download", "Image failed downloaded ");
+                        }
                       },
                     ),
               Divider(),
@@ -670,66 +879,102 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildMessageInput() {
     return Padding(
       padding: EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _messageController,
-              decoration: InputDecoration(
-                hintText: 'Enter message',
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.emoji_emotions),
-                  onPressed: () {
-                    setState(() {
-                      _showEmojiPicker =
-                          !_showEmojiPicker; // Toggle emoji picker visibility
-                    });
-                  },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _messageController,
+                decoration: InputDecoration(
+                  hintText: 'Enter message',
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.emoji_emotions),
+                    onPressed: () {
+                      setState(() {
+                        _showEmojiPicker =
+                            !_showEmojiPicker; // Toggle emoji picker visibility
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
-          ),
-          IconButton(
-              onPressed: () async {
-                await _chatController.pickImageFileFromGallery();
-                // setState(() {
-                //   _isUploading = true;
-                // });
-                await _chatController.sendMessageWithImage(
-                  widget.chat.id,
-                  FirebaseAuth.instance.currentUser!.uid,
-                );
-                // setState(() {
-                //   _isUploading = false;
-                // });
-              },
-              icon: Icon(Icons.image, color: Colors.blueAccent)),
-          ElevatedButton(
-            onPressed: () {
-              if (_messageController.text.trim().isNotEmpty) {
-                _chatController.sendMessage(
+            IconButton(
+                onPressed: () async {
+                  await _chatController.pickImageFileFromGallery();
+                  // setState(() {
+                  //   _isUploading = true;
+                  // });
+                  await _chatController.sendMessageWithImage(
                     widget.chat.id,
                     FirebaseAuth.instance.currentUser!.uid,
-                    _messageController.text,
-                    token);
-                _messageController.clear();
-                setState(() {
-                  _showEmojiPicker = false;
+                  );
+                  // setState(() {
+                  //   _isUploading = false;
+                  // });
+                },
+                icon: Icon(Icons.image, color: Colors.blueAccent)),
+            GestureDetector(
+              child: Icon(Icons.mic, color: Colors.pink),
+              onLongPress: () async {
+                var audioPlayer = AudioPlayer();
+                await audioPlayer.play(AssetSource("Notification.mp3"));
+                audioPlayer.onPlayerComplete.listen((a) {
+                  audioController.start.value = DateTime.now();
+                  startRecord();
+                  audioController.isRecording.value = true;
                 });
-              }
-            },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16))),
-            child: Text(
-              'Send',
-              style: TextStyle(color: Colors.white),
+              },
+              onLongPressEnd: (details) {
+                stopRecord();
+              },
             ),
-          ),
-        ],
+            ElevatedButton(
+              onPressed: () {
+                if (_messageController.text.trim().isNotEmpty) {
+                  _chatController.sendMessage(
+                      widget.chat.id,
+                      FirebaseAuth.instance.currentUser!.uid,
+                      _messageController.text,
+                      token);
+                  _messageController.clear();
+                  setState(() {
+                    _showEmojiPicker = false;
+                  });
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.pink,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16))),
+              child: Text(
+                'Send',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  String _formatDuration(Duration? duration) {
+    if (duration == null) return '--:--';
+
+    int hours = duration.inHours;
+    int minutes = duration.inMinutes.remainder(60);
+    int seconds = duration.inSeconds.remainder(60);
+
+    String hoursStr = (hours < 10) ? '0$hours' : '$hours';
+    String minutesStr = (minutes < 10) ? '0$minutes' : '$minutes';
+    String secondsStr = (seconds < 10) ? '0$seconds' : '$seconds';
+
+    return '$hoursStr:$minutesStr:$secondsStr';
   }
 
   Widget _buildEmojiPicker() {
@@ -741,6 +986,82 @@ class _ChatPageState extends State<ChatPage> {
           )
         : SizedBox
             .shrink(); // Returns an empty widget if emoji picker is not shown
+  }
+
+  Widget _audio({
+    required String message,
+    required bool isCurrentUser,
+    required int index,
+    required String time,
+    required String duration,
+  }) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.5,
+      padding: EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: isCurrentUser ? Colors.pink : Colors.pink.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              audioController.onPressedPlayButton(index, message);
+              // changeProg(duration: duration);
+            },
+            onSecondaryTap: () {
+              audioPlayer.stop();
+              //   audioController.completedPercentage.value = 0.0;
+            },
+            child: Obx(
+              () => (audioController.isRecordPlaying &&
+                      audioController.currentId == index)
+                  ? Icon(
+                      Icons.cancel,
+                      color: isCurrentUser ? Colors.white : Colors.pink,
+                    )
+                  : Icon(
+                      Icons.play_arrow,
+                      color: isCurrentUser ? Colors.white : Colors.pink,
+                    ),
+            ),
+          ),
+          Obx(
+            () => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    // Text(audioController.completedPercentage.value.toString(),style: TextStyle(color: Colors.white),),
+                    LinearProgressIndicator(
+                      minHeight: 5,
+                      backgroundColor: Colors.grey,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isCurrentUser ? Colors.white : Colors.pink,
+                      ),
+                      value: (audioController.isRecordPlaying &&
+                              audioController.currentId == index)
+                          ? audioController.completedPercentage.value
+                          : audioController.totalDuration.value.toDouble(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 10,
+          ),
+          // Text(
+          //   duration,
+          //   style: TextStyle(
+          //       fontSize: 12, color: isCurrentUser ? Colors.white : mainColor),
+          // ),
+        ],
+      ),
+    );
   }
 }
 

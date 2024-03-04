@@ -5,6 +5,7 @@ import 'package:date/view/chat/new_chat.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'package:intl/intl.dart';
@@ -28,7 +29,7 @@ class _ChatListPageState extends State<ChatListPage> {
   void initState() {
     super.initState();
     currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    print(filteredChats);
+    print(currentUserId);
   }
 
   @override
@@ -40,8 +41,9 @@ class _ChatListPageState extends State<ChatListPage> {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(2.0),
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 20),
+            height: 40,
             child: TextField(
               controller: searchController,
               onChanged: _filterChats,
@@ -55,12 +57,14 @@ class _ChatListPageState extends State<ChatListPage> {
           ),
           Expanded(
             child: StreamBuilder<List<Chat>>(
-              stream: _chatController.getChats(currentUserId),
+              stream: _chatController
+                  .getChats(FirebaseAuth.instance.currentUser!.uid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   // Display a user-friendly message when the chat list is empty
+                  print(snapshot.data);
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -96,7 +100,8 @@ class _ChatListPageState extends State<ChatListPage> {
                                     seen: false,
                                     type: '',
                                     senderId: '',
-                                    timestamp: Timestamp.now());
+                                    timestamp: Timestamp.now(),
+                                    duration: '');
                             String otherMemberId = chats[index]
                                 .memberIds
                                 .firstWhere((id) => id != currentUserId);
@@ -123,93 +128,107 @@ class _ChatListPageState extends State<ChatListPage> {
                                           as Map<String, dynamic>;
                                   String userName = userData['name'];
                                   String userImage = userData['imageProfile'];
-                           bool hasContent =  lastMessage.content.isNotEmpty ;
-                           bool check=lastMessage.type == 'text' && lastMessage.content.isNotEmpty;
-                           String textToDisplay = lastMessage.type == 'text' && lastMessage.content.isNotEmpty ? lastMessage.content : '';
-                                 if (check && lastMessage.content.length > 10) {
-        textToDisplay = '${lastMessage.content.substring(0, 20)}...';
-      }
-                                
-                                  return hasContent ? Card(
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(15)),
-                                    elevation: 1,
-                                    margin: EdgeInsets.symmetric(
-                                        horizontal:
-                                            MediaQuery.of(context).size.width *
-                                                .04,
-                                        vertical: 4),
-                                    child: ListTile(
-                                        leading: CircleAvatar(
-                                          backgroundImage:
-                                              NetworkImage(userImage),
-                                        ),
-                                        title: Text(userName),
-                                        subtitle: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            lastMessage.type == 'text'
-                                                ? Text(textToDisplay)
-                                                : lastMessage.senderId ==
-                                                        currentUserId
-                                                    ? Text('you sent a picture')
-                                                    : Text(
-                                                        'you have a picture'),
-                                          ],
-                                        ),
-                                        trailing: Column(
-                                          children: [
-                                            Text(formatMessageTimestamp(
-                                                lastMessage.timestamp
-                                                    .toDate())),
-                                            chat.seen
-                                                ? Icon(Icons.done_all,
-                                                    color: Colors
-                                                        .pink) // Seen icon
-                                                : lastMessage.senderId !=
-                                                        currentUserId
-                                                    ? Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .all(8.0),
-                                                        child: Container(
-                                                          decoration: BoxDecoration(
-                                                              color:
-                                                                  Colors.pink,
-                                                              borderRadius:
-                                                                  BorderRadius
-                                                                      .circular(
-                                                                          10),
-                                                              border: Border.all(
-                                                                  color: Colors
-                                                                      .pink)),
-                                                          child: Text(
-                                                            'new',
-                                                            style: TextStyle(
-                                                                color: Colors
-                                                                    .white),
-                                                          ),
-                                                        ),
-                                                      )
-                                                    : Icon(Icons.done,
-                                                        color: Colors.grey),
-                                          ],
-                                        ), // Unseen icon
-                                        // Add more details or customize the ListTile as needed
+                                  bool hasContent =
+                                      lastMessage.content.isNotEmpty;
+                                  bool check = lastMessage.type == 'text' &&
+                                      lastMessage.content.isNotEmpty;
+                                  String textToDisplay =
+                                      lastMessage.type == 'text' &&
+                                              lastMessage.content.isNotEmpty
+                                          ? lastMessage.content
+                                          : '';
+                                  if (check &&
+                                      lastMessage.content.length > 10) {
+                                    textToDisplay =
+                                        '${lastMessage.content.substring(0, 20)}...';
+                                  }
 
-                                        onTap: () => Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => ChatPage(
-                                                  chat: chats[index],
-                                                  currentUserId: currentUserId,
-                                                  uid: otherMemberId,
-                                                ),
+                                  return hasContent
+                                      ? Card(
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(15)),
+                                          elevation: 1,
+                                          margin: EdgeInsets.symmetric(
+                                              horizontal: MediaQuery.of(context)
+                                                      .size
+                                                      .width *
+                                                  .04,
+                                              vertical: 4),
+                                          child: ListTile(
+                                              leading: CircleAvatar(
+                                                backgroundImage:
+                                                    NetworkImage(userImage),
                                               ),
-                                            )),
-                                  ): SizedBox();
+                                              title: Text(userName),
+                                              subtitle: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  lastMessage.type == 'text'
+                                                      ? Text(textToDisplay)
+                                                      : lastMessage.senderId ==
+                                                              currentUserId
+                                                          ? Text(
+                                                              'you sent a picture')
+                                                          : Text(
+                                                              'you have a picture'),
+                                                ],
+                                              ),
+                                              trailing: Column(
+                                                children: [
+                                                  Text(formatMessageTimestamp(
+                                                      lastMessage.timestamp
+                                                          .toDate())),
+                                                  chat.seen
+                                                      ? Icon(Icons.done_all,
+                                                          color: Colors
+                                                              .pink) // Seen icon
+                                                      : lastMessage.senderId !=
+                                                              currentUserId
+                                                          ? Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .all(8.0),
+                                                              child: Container(
+                                                                decoration: BoxDecoration(
+                                                                    color: Colors
+                                                                        .pink,
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            10),
+                                                                    border: Border.all(
+                                                                        color: Colors
+                                                                            .pink)),
+                                                                child: Text(
+                                                                  'new',
+                                                                  style: TextStyle(
+                                                                      color: Colors
+                                                                          .white),
+                                                                ),
+                                                              ),
+                                                            )
+                                                          : Icon(Icons.done,
+                                                              color:
+                                                                  Colors.grey),
+                                                ],
+                                              ), // Unseen icon
+                                              // Add more details or customize the ListTile as needed
+
+                                              onTap: () => Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          ChatPage(
+                                                        chat: chats[index],
+                                                        currentUserId:
+                                                            currentUserId,
+                                                        uid: otherMemberId,
+                                                      ),
+                                                    ),
+                                                  )),
+                                        )
+                                      : SizedBox();
                                 }
                               },
                             );

@@ -29,22 +29,10 @@ class _UserDetailScreenState extends State<UserDetailScreen>
   String country = "";
   String bio = '';
   String profilePicture = '';
-  String lookingForInaPartner = "";
 
-  String height = "";
-  String weight = "";
-  String bodyType = "";
-  String drink = "";
-  String smoke = "";
-  String martialStatus = "";
-  String haveChildren = "";
-  String noOfChildren = "";
   String profession = "";
   String employmentStatus = "";
-  String income = "";
-  String livingSituation = "";
-  String willingToRelocate = "";
-  String relationshipYouAreLookingFor = "";
+
   String nationality = "";
   String eduation = '';
   String languageSpoken = "";
@@ -143,6 +131,7 @@ class _UserDetailScreenState extends State<UserDetailScreen>
     return Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
+
           title: const Text(
             "User Profile",
             style: TextStyle(color: Colors.black),
@@ -207,258 +196,234 @@ class _UserDetailScreenState extends State<UserDetailScreen>
                 : Container()
           ],
         ),
-        body: widget.userID != FirebaseAuth.instance.currentUser!.uid
-            ? Stack(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: Image.network(
-                      profilePicture.toString(),
-                      fit: BoxFit.cover,
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.all(30),
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 80,
+                  backgroundImage: NetworkImage(profilePicture.toString()),
+                  backgroundColor: Colors.black,
+                ),
+                SizedBox(
+                  height: 10,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name + ',' + age,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 20),
+                        ),
+                        Text(profession)
+                      ],
                     ),
-                  ),
-                  // buttonArrow(context),
-                  scroll()
-                ],
-              )
-            : SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.all(30),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 80,
-                        backgroundImage:
-                            NetworkImage(profilePicture.toString()),
-                        backgroundColor: Colors.black,
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name + ',' + age,
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 20),
-                              ),
-                              Text(profession)
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 20,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                favorited,
-                                style:
-                                    TextStyle(color: Colors.pink, fontSize: 20),
-                              ),
-                              Text("Favorited")
-                            ],
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                liked == '' ? '0' : liked,
-                                style:
-                                    TextStyle(color: Colors.pink, fontSize: 20),
-                              ),
-                              Text("Liked")
-                            ],
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text(
-                                favorites == '' ? '0' : liked,
-                                style:
-                                    TextStyle(color: Colors.pink, fontSize: 20),
-                              ),
-                              Text("Favorites")
-                            ],
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      Container(
-                        child: TabBar(
-                            labelColor: Colors.black,
-                            controller: tabController,
-                            isScrollable: true,
-                            indicatorColor: Colors.pink,
-                            tabs: [
-                              Tab(
-                                text: "About",
-                              ),
-                              Tab(
-                                text: "Gallery",
-                              )
-                            ]),
-                      ),
-                      Container(
-                        width: double.maxFinite,
-                        height: 300,
-                        child: TabBarView(controller: tabController, children: [
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Location",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20),
+                  ],
+                ),
+                SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          favorited,
+                          style: TextStyle(color: Colors.pink, fontSize: 20),
+                        ),
+                        Text("Favorited")
+                      ],
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          liked == '' ? '0' : liked,
+                          style: TextStyle(color: Colors.pink, fontSize: 20),
+                        ),
+                        Text("Liked")
+                      ],
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          favorites == '' ? '0' : liked,
+                          style: TextStyle(color: Colors.pink, fontSize: 20),
+                        ),
+                        Text("Favorites")
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+                Container(
+                  child: TabBar(
+                      labelColor: Colors.black,
+                      controller: tabController,
+                      isScrollable: true,
+                      indicatorColor: Colors.pink,
+                      tabs: [
+                        Tab(
+                          text: "About",
+                        ),
+                        Tab(
+                          text: "Gallery",
+                        )
+                      ]),
+                ),
+                Container(
+                  width: double.maxFinite,
+                  height: 300,
+                  child: TabBarView(controller: tabController, children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Location",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            Text(city + ',' + country)
+                          ],
+                        ),
+                        SizedBox(
+                          height: 5,
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Profession",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            Text(profession)
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Bio",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            Text(bio)
+                          ],
+                        ),
+                        SizedBox(
+                          height: 5,
+                        ),
+                        Text(
+                          'Interests',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 22),
+                        ),
+                        Container(
+                          height: 60, // Set the desired height
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            shrinkWrap: true,
+                            itemCount: interests.length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    // color: Colors.grey,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: Colors
+                                          .pink, // Change the border color to pink
+                                    ),
                                   ),
-                                  Text(city + ',' + country)
-                                ],
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Profession",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20),
-                                  ),
-                                  Text(profession)
-                                ],
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Bio",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20),
-                                  ),
-                                  Text(bio)
-                                ],
-                              ),
-                              SizedBox(
-                                height: 5,
-                              ),
-                              Text(
-                                'Interests',
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 22),
-                              ),
-                              Container(
-                                height: 60, // Set the desired height
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  shrinkWrap: true,
-                                  itemCount: interests.length,
-                                  itemBuilder: (context, index) {
-                                    return Padding(
+                                  child: Center(
+                                    child: Padding(
                                       padding: const EdgeInsets.all(8.0),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          // color: Colors.grey,
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: Colors
-                                                .pink, // Change the border color to pink
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Text(
-                                              interests[index],
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                color: Colors.pink,
-                                              ),
-                                            ),
-                                          ),
+                                      child: Text(
+                                        interests[index],
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.pink,
                                         ),
                                       ),
-                                    );
-                                  },
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-                          SizedBox(
-                            width: MediaQuery.of(context).size.width,
-                            height: MediaQuery.of(context).size.height * 0.4,
-                            child: Padding(
-                              padding: EdgeInsets.all(2),
-                              child: Carousel(
-                                indicatorBarColor:
-                                    Colors.black.withOpacity(0.3),
-                                autoScrollDuration: Duration(seconds: 2),
-                                animationPageDuration:
-                                    Duration(milliseconds: 500),
-                                activateIndicatorColor: Colors.pink,
-                                animationPageCurve: Curves.easeIn,
-                                indicatorBarHeight: 30,
-                                indicatorHeight: 10,
-                                indicatorWidth: 10,
-                                unActivatedIndicatorColor: Colors.grey,
-                                stopAtEnd: true,
-                                items: [
-                                  Image.network(
-                                    urlImage1,
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Image.network(
-                                    urlImage2,
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Image.network(
-                                    urlImage3,
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Image.network(
-                                    urlImage4,
-                                    fit: BoxFit.cover,
-                                  ),
-                                  Image.network(
-                                    urlImage5,
-                                    fit: BoxFit.cover,
-                                  )
-                                ],
-                              ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width,
+                      height: MediaQuery.of(context).size.height * 0.4,
+                      child: Padding(
+                        padding: EdgeInsets.all(2),
+                        child: Carousel(
+                          indicatorBarColor: Colors.black.withOpacity(0.3),
+                          autoScrollDuration: Duration(seconds: 2),
+                          animationPageDuration: Duration(milliseconds: 500),
+                          activateIndicatorColor: Colors.pink,
+                          animationPageCurve: Curves.easeIn,
+                          indicatorBarHeight: 30,
+                          indicatorHeight: 10,
+                          indicatorWidth: 10,
+                          unActivatedIndicatorColor: Colors.grey,
+                          stopAtEnd: true,
+                          items: [
+                            Image.network(
+                              urlImage1,
+                              fit: BoxFit.cover,
                             ),
-                          ),
-                        ]),
+                            Image.network(
+                              urlImage2,
+                              fit: BoxFit.cover,
+                            ),
+                            Image.network(
+                              urlImage3,
+                              fit: BoxFit.cover,
+                            ),
+                            Image.network(
+                              urlImage4,
+                              fit: BoxFit.cover,
+                            ),
+                            Image.network(
+                              urlImage5,
+                              fit: BoxFit.cover,
+                            )
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ]),
                 ),
-              ));
+              ],
+            ),
+          ),
+        ));
   }
 
   buttonArrow(BuildContext context) {
@@ -627,23 +592,41 @@ class _UserDetailScreenState extends State<UserDetailScreen>
                         Text(
                           'Interests',
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22,
-                          ),
+                              fontWeight: FontWeight.bold, fontSize: 22),
                         ),
                         Container(
-                          height: 180,
-                          child: Column(
-                            children: [
-                              for (int i = 0; i < interests.length; i += 3)
-                                buildInterestRow(
-                                  interests,
-                                  i,
-                                  (i + 3 <= interests.length)
-                                      ? i + 3
-                                      : interests.length,
-                                ), // Remaining rows
-                            ],
+                          height: 60, // Set the desired height
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            shrinkWrap: true,
+                            itemCount: interests.length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    // color: Colors.grey,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: Colors
+                                          .pink, // Change the border color to pink
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        interests[index],
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.pink,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                         SizedBox(

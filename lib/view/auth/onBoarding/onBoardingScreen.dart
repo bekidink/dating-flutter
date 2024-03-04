@@ -1,6 +1,6 @@
 import 'package:date/view/auth/onBoarding/First.dart';
 import 'package:date/view/auth/onBoarding/Second.dart';
-import 'package:date/view/auth/onBoarding/Thrid.dart';
+import 'package:date/view/auth/onBoarding/Third.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -16,7 +16,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  List onboardingPages = [FirstPage(), SecondPage(), ThridPage()];
+  List onboardingPages = [FirstPage(), SecondPage(), ThirdPage()];
 
   @override
   Widget build(BuildContext context) {

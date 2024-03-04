@@ -5,7 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date/global.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:getwidget/getwidget.dart';
 import "package:http/http.dart" as http;
 import 'package:http/http.dart';
 import '../models/person.dart';
@@ -59,25 +61,24 @@ class ProfileController extends GetxController {
       if (kDebugMode) {
         print(chosenGender);
       }
-     String currentUserUid = FirebaseAuth.instance.currentUser!.uid;
+      String currentUserUid = FirebaseAuth.instance.currentUser!.uid;
 
-usersProfileList.bindStream(
-  FirebaseFirestore.instance
-      .collection("users")
-      .where("age", isGreaterThanOrEqualTo: int.parse(chosenAge.toString()))
-      .where("gender", isEqualTo: chosenGender!.toLowerCase().toString())
-      .snapshots()
-      .map((QuerySnapshot queryDataSnapshot) {
-    List<Person> profileList = [];
-    for (var eachProfile in queryDataSnapshot.docs) {
-      if (eachProfile["uid"] != currentUserUid) {
-        profileList.add(Person.fromDataSnapshot(eachProfile));
-      }
-    }
-    return profileList;
-  })
-);
-
+      usersProfileList.bindStream(FirebaseFirestore.instance
+          .collection("users")
+          .where("age", isGreaterThanOrEqualTo: int.parse(chosenAge.toString()))
+          .where("gender", isEqualTo: chosenGender!.toLowerCase().toString())
+          .snapshots()
+          .map((QuerySnapshot queryDataSnapshot) {
+        List<Person> profileList = [];
+        chosenAge = null;
+        chosenGender = null;
+        for (var eachProfile in queryDataSnapshot.docs) {
+          if (eachProfile["uid"] != currentUserUid) {
+            profileList.add(Person.fromDataSnapshot(eachProfile));
+          }
+        }
+        return profileList;
+      }));
     }
   }
 

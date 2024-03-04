@@ -2,7 +2,11 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:date/controller/auth_controller.dart';
+import 'package:date/view/auth/onBoarding/Second.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:getwidget/getwidget.dart';
+import 'package:uic/widgets.dart';
 
 import '../../../widgets/custom_text_field.dart';
 
@@ -55,16 +59,22 @@ class _FirstPageState extends State<FirstPage> {
           child: Column(
             // mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              StepIndicator(
+                selectedStepIndex: 1,
+                totalSteps: 4,
+                showLines: true,
+                colorCompleted: Colors.pink,
+              ),
               SizedBox(
-                height: 30,
+                height: 10,
               ),
-              Text(
-                "Profile Details",
-                style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22),
-              ),
+              // Text(
+              //   "Profile Details",
+              //   style: TextStyle(
+              //       color: Colors.black,
+              //       fontWeight: FontWeight.bold,
+              //       fontSize: 22),
+              // ),
               SizedBox(
                 height: 30,
               ),
@@ -159,6 +169,53 @@ class _FirstPageState extends State<FirstPage> {
                   iconData: Icons.person,
                 ),
               ),
+              SizedBox(
+                height: 10,
+              ),
+              Text(
+                'Or',
+                style: TextStyle(fontSize: 20),
+              ),
+              SizedBox(
+                height: 10,
+              ),
+              GFButton(
+                onPressed: () {},
+                text: "Google",
+                icon: Icon(Icons.email),
+                type: GFButtonType.outline2x,
+              ),
+              SizedBox(
+                height: 20,
+              ),
+              Container(
+                  width: MediaQuery.of(context).size.width - 150,
+                  height: 50,
+                  decoration: BoxDecoration(
+                      color: Colors.pink,
+                      borderRadius: BorderRadius.all(Radius.circular(12))),
+                  child: TextButton(
+                    child: Text(
+                      'Continue',
+                      style: TextStyle(color: Colors.white, fontSize: 20),
+                    ),
+                    onPressed: () {
+                      if (authenticationController.imageFile == null &&
+                          authenticationController.nameController.text
+                              .trim()
+                              .isEmpty &&
+                          authenticationController.emailController.text
+                              .trim()
+                              .isEmpty &&
+                          authenticationController.passwordController.text
+                              .trim()
+                              .isEmpty) {
+                        Get.to(SecondPage());
+                      } else {
+                        Get.to(SecondPage());
+                      }
+                    },
+                  )),
             ],
           ),
         ),

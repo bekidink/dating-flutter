@@ -6,13 +6,15 @@ class CustomTextField extends StatelessWidget {
   final String? assetRef;
   final String? labelText;
   final bool isObsecure;
+  final Color? colorLabel;
   const CustomTextField(
       {super.key,
       this.editingController,
       this.assetRef,
       this.iconData,
       required this.isObsecure,
-      this.labelText});
+      this.labelText,
+      this.colorLabel});
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -28,7 +30,9 @@ class CustomTextField extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   child: Image.asset(assetRef.toString()),
                 ),
-          labelStyle: const TextStyle(fontSize: 18),
+          labelStyle: TextStyle(
+              fontSize: 18,
+              color: colorLabel == null ? colorLabel : Colors.black),
           enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(6),
               borderSide: const BorderSide(color: Colors.grey)),
