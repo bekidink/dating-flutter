@@ -20,7 +20,7 @@ class SwipeScreen extends StatefulWidget {
 }
 
 class _SwipeScreenState extends State<SwipeScreen> {
-  late ProfileController profileController;
+  ProfileController profileController = Get.put(ProfileController());
   String senderName = "";
   bool favorite = false;
   String receiverToken = '';
@@ -38,7 +38,6 @@ class _SwipeScreenState extends State<SwipeScreen> {
         senderName = dataSnapshot.data()!["name"].toString();
         print(senderName);
       });
-      buildSwipeItems();
     });
   }
 
@@ -70,7 +69,9 @@ class _SwipeScreenState extends State<SwipeScreen> {
           }));
     }
 
-    setState(() {}); // Trigger rebuild after building swipe items
+    setState(() {
+      _matchEngine = MatchEngine(swipeItems: _swipeItems);
+    }); // Trigger rebuild after building swipe items
   }
 
   retriveReceiver(String uid) async {
@@ -89,8 +90,9 @@ class _SwipeScreenState extends State<SwipeScreen> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    profileController = Get.put(ProfileController());
-    print(profileController.allUsersProfileList.length);
+
+    // print(profileController.allUsersProfileList.length);
+    buildSwipeItems();
 
     readCurrentUserData();
   }
@@ -100,12 +102,23 @@ class _SwipeScreenState extends State<SwipeScreen> {
     return Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
-          title: Column(
+          title: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Habesha",
-                style: TextStyle(color: Colors.pink, fontSize: 17),
+              Row(
+                children: [
+                  Text(
+                    "Habesha",
+                    style: TextStyle(color: Colors.pink, fontSize: 17),
+                  ),
+                  SizedBox(
+                    width: 4,
+                  ),
+                  Text(
+                    'ሐበሻ',
+                    style: TextStyle(color: Colors.pink, fontSize: 17),
+                  )
+                ],
               ),
               Row(
                 children: [
@@ -127,12 +140,12 @@ class _SwipeScreenState extends State<SwipeScreen> {
           Container(
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
             height: MediaQuery.of(context).size.height - kToolbarHeight,
-            margin: EdgeInsetsDirectional.only(
+            margin: const EdgeInsetsDirectional.only(
               bottom: 25,
             ),
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 20),
             child: SwipeCards(
-              matchEngine: MatchEngine(swipeItems: _swipeItems),
+              matchEngine: _matchEngine!,
               itemBuilder: (BuildContext context, int index) {
                 return Stack(
                   fit: StackFit.expand,
@@ -152,7 +165,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Spacer(),
+                                const Spacer(),
                                 GestureDetector(
                                     onTap: () async {},
                                     child: Column(
@@ -161,36 +174,51 @@ class _SwipeScreenState extends State<SwipeScreen> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.start,
                                         children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                _swipeItems[index]
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Get.to(UserDetailScreen(
+                                                userID: _swipeItems[index]
                                                     .content
-                                                    .name
-                                                    .toString(),
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 24,
-                                                    letterSpacing: 4,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              Text(
-                                                _swipeItems[index]
-                                                    .content
-                                                    .age
-                                                    .toString(),
-                                                // eachProfileInfo.city.toString(),
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 24,
-                                                    letterSpacing: 4,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                            ],
+                                                    .uid,
+                                              ));
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.white30,
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            16))),
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                  _swipeItems[index]
+                                                      .content
+                                                      .name
+                                                      .toString(),
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 24,
+                                                      letterSpacing: 4,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                                Text(
+                                                  _swipeItems[index]
+                                                      .content
+                                                      .age
+                                                      .toString(),
+                                                  // eachProfileInfo.city.toString(),
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 24,
+                                                      letterSpacing: 4,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                          SizedBox(
+                                          const SizedBox(
                                             height: 4,
                                           ),
                                           ElevatedButton(
@@ -204,10 +232,16 @@ class _SwipeScreenState extends State<SwipeScreen> {
                                                               16))),
                                               child: Text(
                                                 _swipeItems[index]
-                                                    .content
-                                                    .bio
-                                                    .toString(),
-                                                style: TextStyle(
+                                                            .content
+                                                            .bio
+                                                            .length >
+                                                        20
+                                                    ? ' ${_swipeItems[index].content.bio.substring(0, 20)}...'
+                                                    : _swipeItems[index]
+                                                        .content
+                                                        .bio
+                                                        .toString(),
+                                                style: const TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 14),
                                               )),
@@ -224,9 +258,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
                   _stackFinished = true;
                 });
               },
-              itemChanged: (SwipeItem item, int index) {
-                print("item: ${item.content.name}, index: $index");
-              },
+              itemChanged: (SwipeItem item, int index) {},
               leftSwipeAllowed: true,
               rightSwipeAllowed: true,
               upSwipeAllowed: true,
@@ -236,7 +268,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
                 padding: const EdgeInsets.all(3.0),
                 decoration:
                     BoxDecoration(border: Border.all(color: Colors.green)),
-                child: Icon(
+                child: const Icon(
                   Icons.star,
                   color: Colors.red,
                 ),
@@ -245,23 +277,33 @@ class _SwipeScreenState extends State<SwipeScreen> {
                 margin: const EdgeInsets.all(15.0),
                 decoration:
                     BoxDecoration(border: Border.all(color: Colors.red)),
-                child: Text('Nope'),
+                child: const Text('Nope'),
               ),
               superLikeTag: Container(
                 margin: const EdgeInsets.all(15.0),
                 padding: const EdgeInsets.all(3.0),
                 decoration:
                     BoxDecoration(border: Border.all(color: Colors.orange)),
-                child: Text('Super Like'),
+                child: const Text('Super Like'),
               ),
             ),
           ),
           Visibility(
             visible: _stackFinished,
-            child: Center(
-              child: Text(
-                "Stack Finished",
-                style: TextStyle(color: Colors.pink),
+            child: const Center(
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 300,
+                  ),
+                  Center(
+                    child: Text(
+                      "Your Matching Over",
+                      style: TextStyle(color: Colors.pink),
+                    ),
+                  ),
+                  Center(child: Text('Enjoy With already existed match'))
+                ],
               ),
             ),
           ),
@@ -272,7 +314,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  margin: EdgeInsets.only(left: 20),
+                  margin: const EdgeInsets.only(left: 20),
                   decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
@@ -286,14 +328,14 @@ class _SwipeScreenState extends State<SwipeScreen> {
                       onTap: () {
                         _matchEngine!.currentItem?.nope();
                       },
-                      child: Icon(
+                      child: const Icon(
                         Icons.close,
                         color: Colors.red,
                         size: 40,
                       )),
                 ),
                 Container(
-                  margin: EdgeInsets.only(left: 20),
+                  margin: const EdgeInsets.only(left: 20),
                   decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
@@ -307,14 +349,14 @@ class _SwipeScreenState extends State<SwipeScreen> {
                       onTap: () {
                         _matchEngine!.currentItem?.superLike();
                       },
-                      child: Icon(
+                      child: const Icon(
                         Icons.favorite,
                         color: Colors.pink,
                         size: 40,
                       )),
                 ),
                 Container(
-                  margin: EdgeInsets.only(right: 20),
+                  margin: const EdgeInsets.only(right: 20),
                   decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
@@ -328,7 +370,7 @@ class _SwipeScreenState extends State<SwipeScreen> {
                       onTap: () {
                         _matchEngine!.currentItem?.like();
                       },
-                      child: Icon(
+                      child: const Icon(
                         Icons.star,
                         color: Colors.pink,
                         size: 40,

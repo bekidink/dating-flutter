@@ -18,6 +18,7 @@ class ProfileController extends GetxController {
   List<Person> get allUsersProfileList => usersProfileList.value;
   NotificationService notificationService = NotificationService();
   String gender = '';
+  String lookingFor = '';
   getResults() async {
     onInit();
   }
@@ -32,6 +33,7 @@ class ProfileController extends GetxController {
         .get()
         .then((dataSnapshot) {
       gender = dataSnapshot.data()!["gender"].toString();
+      lookingFor = dataSnapshot.data()!['lookingFor'].toString();
     });
     if (kDebugMode) {
       print("gender $gender");
@@ -41,6 +43,7 @@ class ProfileController extends GetxController {
         FirebaseFirestore.instance
             .collection("users")
             .where("uid", isNotEqualTo: FirebaseAuth.instance.currentUser!.uid)
+            .where("lookingFor", isEqualTo: lookingFor.toString())
             .snapshots()
             .map((QuerySnapshot queryDataSnapshot) {
           List<Person> profileList = [];
@@ -249,5 +252,38 @@ class ProfileController extends GetxController {
         .get();
 
     return snapshot.size; // Returns the number of documents in the collection
+  }
+
+  List<String> blockList = [];
+  retrieveUserInfo(String userIdToAddToBlockList) async {
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get()
+        .then((snapshot) {
+      if (snapshot.exists) {
+        blockList = List<String>.from(snapshot.get('blockList') ?? []);
+        if (!blockList.contains(userIdToAddToBlockList)) {
+          blockList.add(userIdToAddToBlockList);
+          addToBlockList(blockList);
+          blockList.clear();
+          // Update the blocklist in Firestore
+        }
+      }
+    });
+  }
+
+  void addToBlockList(List<String> blockList) async {
+    String currentUserId = FirebaseAuth.instance.currentUser!.uid;
+
+    // Fetch the current user's blocklist
+
+    // Add the user ID to the blocklist if it's not already there
+
+    // Update the blocklist in Firestore
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUserId)
+        .update({'blockList': blockList});
   }
 }

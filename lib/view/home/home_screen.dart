@@ -1,19 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:date/api/notification.dart';
-import 'package:date/global.dart';
-import 'package:date/notification/push_notification.dart';
 import 'package:date/view/chat/chat_list.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../tab/favorite.dart';
 import '../tab/like.dart';
 import '../tab/swipe.dart';
 import '../tab/user_detail.dart';
-import '../tab/view.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,8 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String? token = "";
-  late FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
+
   @override
   void initState() {
     // TODO: implement initState
@@ -53,21 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
         .update({'userDeviceToken': token});
   }
 
-  // initInfo() {
-  //   var androidInitialize =
-  //       const AndroidInitializationSettings('@mipmap/lovelogo');
-  //   // var iosInitialize = const IOSInitializationSettings();
-  //   var initializationSettings =
-  //       InitializationSettings(android: androidInitialize);
-  //   _flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  // }
-
   int screenIndex = 0;
   List tabList = [
-    SwipeScreen(),
+    const SwipeScreen(),
     ChatListPage(),
-    FavoriteScreen(),
-    LikeScreen(),
+    const FavoriteScreen(),
+    const LikeScreen(),
     UserDetailScreen(
       userID: FirebaseAuth.instance.currentUser!.uid,
     )

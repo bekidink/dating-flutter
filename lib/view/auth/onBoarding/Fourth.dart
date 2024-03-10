@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:date/controller/auth_controller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:uic/step_indicator.dart';
 
 import '../../../services/interest.dart';
 import '../../../widgets/custom_text_field.dart';
@@ -43,7 +44,13 @@ class _FourthPageState extends State<FourthPage> {
       child: Column(
         children: [
           SizedBox(
-            height: 30,
+            height: 20,
+          ),
+          StepIndicator(
+            selectedStepIndex: 4,
+            totalSteps: 4,
+            showLines: true,
+            colorCompleted: Colors.pink,
           ),
           Text(
             "Your Interests",

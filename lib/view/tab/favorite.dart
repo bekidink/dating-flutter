@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:date/global.dart';
 import 'package:date/view/tab/user_detail.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -95,7 +93,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                             ? FontWeight.bold
                             : FontWeight.normal),
                   )),
-              Text(
+              const Text(
                 " | ",
                 style: TextStyle(color: Colors.grey),
               ),
@@ -134,11 +132,11 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
               )
             : GridView.count(
                 crossAxisCount: 2,
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 children: List.generate(favoritesList.length, (index) {
                   return GridTile(
                       child: Padding(
-                    padding: EdgeInsets.all(2),
+                    padding: const EdgeInsets.all(2),
                     child: Card(
                       color: Colors.blue.shade200,
                       child: GestureDetector(
@@ -149,65 +147,35 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                         },
                         child: DecoratedBox(
                           decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
                             image: DecorationImage(
                                 image: NetworkImage(
                                     favoritesList[index]["imageProfile"]),
                                 fit: BoxFit.cover),
                           ),
                           child: Padding(
-                            padding: EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(8),
                             child: Center(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  Spacer(),
+                                  const Spacer(),
                                   ElevatedButton(
                                       onPressed: () {},
                                       style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.white30,
+                                          backgroundColor: Colors.black,
                                           shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(16))),
                                       child: Text(
-                                        favoritesList[index]['name']
-                                                .toString() +
-                                            '' +
-                                            favoritesList[index]['age']
-                                                .toString(),
-                                        style: TextStyle(
+                                        '${favoritesList[index]['name']}${favoritesList[index]['age']}',
+                                        style: const TextStyle(
                                             color: Colors.white, fontSize: 14),
                                       )),
-                                  SizedBox(
+                                  const SizedBox(
                                     height: 4,
                                   ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.location_on_outlined,
-                                        color: Colors.grey,
-                                        size: 16,
-                                      ),
-                                      SizedBox(
-                                        width: 5,
-                                      ),
-                                      ElevatedButton(
-                                          onPressed: () {},
-                                          style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.white30,
-                                              shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          16))),
-                                          child: Text(
-                                            favoritesList[index]['city']
-                                                .toString(),
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14),
-                                          )),
-                                    ],
-                                  )
                                 ],
                               ),
                             ),

@@ -118,7 +118,9 @@ class ChatController {
           .map((querySnapshot) {
         return querySnapshot.docs.map((chatDoc) {
           // Convert each chat document to a Chat object
-          return Chat.fromFirestore(chatDoc);
+          final chat = Chat.fromFirestore(chatDoc);
+          // return Chat.fromFirestore(chatDoc);
+          return chat;
         }).toList();
       });
     } catch (error) {
@@ -140,9 +142,7 @@ class ChatController {
   }
 
   Future<void> sendMessageWithImage(
-    String chatId,
-    String senderId,
-  ) async {
+      String chatId, String senderId, String token) async {
     try {
       // Reference to the specific collection of messages within the chat
       String urlOfDownloadedImage = await uploadImageToStorage(profileImage!);
@@ -157,6 +157,7 @@ class ChatController {
         'seen': false,
         'senderId': senderId,
         'timestamp': Timestamp.fromDate(DateTime.now().toUtc()),
+        'duration': ''
       });
 
       // Get the automatically generated message ID
@@ -170,17 +171,18 @@ class ChatController {
           timestamp: Timestamp.now(),
           duration: '');
 
+      final name =
+          getUserNameFromMemberId(FirebaseAuth.instance.currentUser!.uid);
       await addMessageToChat(chatId, newMessage);
-
-      print('Message added successfully with ID: $messageId');
+      sendPushNotification(token, name, 'have image');
     } catch (error) {
       print('Error adding message: $error');
       throw error; // Handle the error as per your requirement
     }
   }
 
-  Future<void> sendMessageWithVoice(
-      String chatId, String senderId, String url, String duration) async {
+  Future<void> sendMessageWithVoice(String chatId, String senderId, String url,
+      String duration, String token) async {
     try {
       // Reference to the specific collection of messages within the chat
       // String urlOfDownloadedImage = await uploadImageToStorage(profileImage!);
@@ -209,8 +211,11 @@ class ChatController {
           timestamp: Timestamp.now(),
           duration: duration);
 
+      // await addMessageToChat(chatId, newMessage);
+      final name =
+          getUserNameFromMemberId(FirebaseAuth.instance.currentUser!.uid);
       await addMessageToChat(chatId, newMessage);
-
+      sendPushNotification(token, name, 'have voice');
       print('Message added successfully with ID: $messageId');
     } catch (error) {
       print('Error adding message: $error');
@@ -348,6 +353,7 @@ class ChatController {
         'seen': false,
         'senderId': senderId,
         'timestamp': Timestamp.fromDate(DateTime.now().toUtc()),
+        'duration': ''
       });
 
       // Get the automatically generated message ID
@@ -360,9 +366,10 @@ class ChatController {
           senderId: FirebaseAuth.instance.currentUser!.uid,
           timestamp: Timestamp.now(),
           duration: '');
-
+      final name =
+          getUserNameFromMemberId(FirebaseAuth.instance.currentUser!.uid);
       await addMessageToChat(chatId, newMessage);
-      sendPushNotification(token, content);
+      sendPushNotification(token, name, content);
       print('Message added successfully with ID: $messageId');
     } catch (error) {
       print('Error adding message: $error');
@@ -616,12 +623,15 @@ class ChatController {
     }
   }
 
-  Future<void> sendPushNotification(token, content) async {
+  Future<void> sendPushNotification(token, senderName, content) async {
     try {
       final body = {
         "to": token,
         // "fjcUE_ZqQrqsxhK6a4BqfC:APA91bE8VPBLKcRLoluzWZ_xoALhWXrK2K7jBCLpaGnZr4Lt-aT0BYDpnA53-zdVhYdG_27RS6TSSqF-FmyP8am_MtSTS6kJDP6V4OXqEdER4m0lr-j81isn7xYbxuEKEvgtvsIZZ7i6",
-        "notification": {"title": "new message", "body": content}
+        "notification": {
+          "title": "new message",
+          "body": "$senderName " " $content"
+        }
       };
       var response = await post(
         Uri.parse('https://fcm.googleapis.com/fcm/send'),

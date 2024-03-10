@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:bilions_ui/bilions_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:date/global.dart';
 import 'package:date/view/home/home_screen.dart';
@@ -8,10 +9,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_phone_number_field/flutter_phone_number_field.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../controller/auth_controller.dart';
+import '../../controller/message_controller.dart';
 import '../../services/interest.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -40,10 +43,12 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
   var authenticationController =
       AuthenticationController.authenticationController;
   bool uploading = false, next = false;
-
+  final ChatController _chatController = ChatController();
   final List<File> _image = [];
   List<String> urlsList = [];
   List interests = [];
+  FocusNode focusNode = FocusNode();
+  String phoneNumber = "";
   double val = 0;
   String name = "";
   String age = "";
@@ -82,6 +87,11 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
       setState(() {
         val = i / _image.length;
       });
+      await _chatController.deleteImageFromStorage(urlImage1);
+      await _chatController.deleteImageFromStorage(urlImage2);
+      await _chatController.deleteImageFromStorage(urlImage3);
+      await _chatController.deleteImageFromStorage(urlImage4);
+      await _chatController.deleteImageFromStorage(urlImage5);
       var refImage = FirebaseStorage.instance.ref().child(
           "images/${DateTime.now().millisecondsSinceEpoch.toString()}.jpg");
       await refImage.putFile(img).whenComplete(() async {
@@ -124,13 +134,17 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
           List<String> interests =
               List<String>.from(snapshot.get('interests') ?? []);
           authenticationController.selectedInterests = interests;
+          urlImage1 = snapshot.data()!["urlImage1"];
+          urlImage2 = snapshot.data()!["urlImage2"];
+          urlImage3 = snapshot.data()!["urlImage3"];
+          urlImage4 = snapshot.data()!["urlImage4"];
+          urlImage5 = snapshot.data()!["urlImage5"];
         });
       }
     });
   }
 
-  updateUserData(String name, String age, String phoneNo, String city,
-      String country, String email, String? gender, List interests) async {
+  updateUserData(String name, String phoneNo, List interests) async {
     showDialog(
         context: context,
         builder: (context) {
@@ -160,10 +174,7 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
         .doc(FirebaseAuth.instance.currentUser!.uid)
         .update({
       'name': name,
-      'age': int.parse(age),
-      'city': city,
-      'email': email,
-      'gender': gender!.toLowerCase(),
+      'phoneNo': phoneNo,
       'urlImage1': urlsList[0].toString(),
       'urlImage2': urlsList[1].toString(),
       'urlImage3': urlsList[2].toString(),
@@ -171,7 +182,8 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
       'urlImage5': urlsList[4].toString(),
       'interests': interests
     });
-    Get.snackbar("Updated", "your account has been updated");
+    // Get.snackbar("Updated", "your account has been updated");
+    toast(context, 'Confirmed', variant: Variant.success);
     Get.to(HomeScreen());
     setState(() {
       uploading = false;
@@ -195,7 +207,7 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
       appBar: AppBar(
           title: Text(
             next ? "Profile Information" : "Choose 5 Images",
-            style: TextStyle(color: Colors.black, fontSize: 22),
+            style: const TextStyle(color: Colors.black, fontSize: 22),
           ),
           actions: [
             next
@@ -211,7 +223,7 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                         Get.snackbar("5 images", 'please choose 5 images');
                       }
                     },
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.navigate_next_outlined,
                       size: 36,
                     ))
@@ -219,7 +231,7 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
       body: next
           ? SingleChildScrollView(
               child: Padding(
-                padding: EdgeInsets.all(30),
+                padding: const EdgeInsets.all(30),
                 child: Column(
                   children: [
                     const SizedBox(
@@ -228,7 +240,7 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                     const Text(
                       "Personal Info:",
                       style: TextStyle(
-                          color: Colors.white,
+                          color: Colors.black,
                           fontSize: 20,
                           fontWeight: FontWeight.bold),
                     ),
@@ -246,60 +258,44 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                     const SizedBox(
                       height: 15,
                     ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width - 40,
-                      height: 50,
-                      child: CustomTextField(
-                        isObsecure: false,
-                        editingController:
-                            authenticationController.emailController,
-                        labelText: "email",
-                        iconData: Icons.email_outlined,
-                      ),
-                    ),
-                    SizedBox(
-                      height: 15,
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width - 40,
-                      height: 50,
-                      child: CustomTextField(
-                        isObsecure: true,
-                        editingController:
-                            authenticationController.passwordController,
-                        labelText: "******",
-                        iconData: Icons.person,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 15,
-                    ),
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width - 40,
-                      height: 50,
-                      child: CustomTextField(
-                        isObsecure: false,
-                        editingController:
-                            authenticationController.ageController,
-                        labelText: "Age",
-                        iconData: Icons.numbers,
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 15,
-                    ),
 
                     SizedBox(
-                      width: MediaQuery.of(context).size.width - 40,
-                      height: 50,
-                      child: CustomTextField(
-                        isObsecure: false,
-                        editingController:
-                            authenticationController.phoneController,
-                        labelText: "Phone",
-                        iconData: Icons.phone,
+                      height: 70,
+                      width: MediaQuery.of(context).size.width * 0.9,
+                      child: FlutterPhoneNumberField(
+                        style: const TextStyle(color: Colors.black),
+                        focusNode: focusNode,
+                        initialCountryCode: "ET",
+                        pickerDialogStyle: PickerDialogStyle(
+                          countryFlagStyle: const TextStyle(
+                              fontSize: 17, color: Colors.white),
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: 'Phone Number',
+                          hintStyle:
+                              TextStyle(color: Colors.black, fontSize: 14),
+                          border: OutlineInputBorder(
+                            borderSide: BorderSide(),
+                          ),
+                        ),
+                        languageCode: "en",
+                        onChanged: (phone) {
+                          if (phone.completeNumber.length == 13) {
+                            setState(() {
+                              phoneNumber = phone.completeNumber;
+                              authenticationController.phoneController.text =
+                                  phoneNumber;
+                            });
+                          }
+                        },
+                        onCountryChanged: (country) {
+                          if (kDebugMode) {
+                            print('Country changed to: ${country.name}');
+                          }
+                        },
                       ),
                     ),
+
                     const SizedBox(
                       height: 15,
                     ),
@@ -377,11 +373,12 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                     ),
                     GridView.builder(
                       shrinkWrap: true,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          mainAxisExtent: 50),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              mainAxisExtent: 50),
                       itemCount: availableInterests.length,
                       itemBuilder: (context, index) {
                         final isSelected = authenticationController
@@ -418,7 +415,7 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                                   width: 30, // Adjust the width as needed
                                   height: 30, // Adjust the height as needed
                                 ),
-                                SizedBox(
+                                const SizedBox(
                                     height: 4), // Adjust the spacing as needed
                                 Text(
                                   availableInterests[index].name,
@@ -436,13 +433,13 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                         );
                       },
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 10,
                     ),
                     Container(
                       width: MediaQuery.of(context).size.width - 30,
                       height: 50,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                           color: Colors.pink,
                           borderRadius: BorderRadius.all(Radius.circular(12))),
                       child: InkWell(
@@ -450,24 +447,13 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                           if (authenticationController.nameController.text
                               .trim()
                               .isNotEmpty) {
-                            _image.length > 0
+                            _image.isNotEmpty
                                 ? updateUserData(
                                     authenticationController.nameController.text
-                                        .trim(),
-                                    authenticationController.ageController.text
                                         .trim(),
                                     authenticationController
                                         .phoneController.text
                                         .trim(),
-                                    authenticationController.cityController.text
-                                        .trim(),
-                                    authenticationController
-                                        .countryController.text
-                                        .trim(),
-                                    authenticationController
-                                        .emailController.text
-                                        .trim(),
-                                    selectedGender,
                                     authenticationController.selectedInterests)
                                 : null;
                           } else {
@@ -475,7 +461,7 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                                 "please fill out all field in text field");
                           }
                         },
-                        child: Center(
+                        child: const Center(
                             child: Text(
                           "Update",
                           style: TextStyle(
@@ -504,8 +490,9 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                   padding: const EdgeInsets.all(4),
                   child: GridView.builder(
                       itemCount: _image.length + 1,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3),
                       itemBuilder: (context, index) {
                         return index == 0
                             ? Container(
@@ -523,11 +510,11 @@ class _AccountSettingScreenState extends State<AccountSettingScreen> {
                                               "5 Images Already Selected");
                                         }
                                       },
-                                      icon: Icon(Icons.add)),
+                                      icon: const Icon(Icons.add)),
                                 ),
                               )
                             : Container(
-                                margin: EdgeInsets.all(3),
+                                margin: const EdgeInsets.all(3),
                                 decoration: BoxDecoration(
                                     image: DecorationImage(
                                         image: FileImage(_image[index - 1]),

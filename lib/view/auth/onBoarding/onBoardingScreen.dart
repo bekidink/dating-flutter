@@ -60,28 +60,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       authenticationController.bioController.text
                           .trim()
                           .isNotEmpty) {
-                    authenticationController.createNewUser(
-                        authenticationController.profileImage!,
-                        authenticationController.ageController.text.trim(),
-                        authenticationController.nameController.text
-                            .trim()
-                            .toUpperCase(),
-                        authenticationController.emailController.text.trim(),
-                        authenticationController.passwordController.text.trim(),
-                        authenticationController.genderController.text
-                            .toLowerCase(),
-                        authenticationController.phoneController.text.trim(),
-                        authenticationController.cityController.text
-                            .trim()
-                            .toUpperCase(),
-                        authenticationController.countryController.text
-                            .trim()
-                            .toUpperCase(),
-                        authenticationController.professionController.text
-                            .trim(),
-                        authenticationController.religionController.text.trim(),
-                        authenticationController.selectedInterests,
-                        authenticationController.bioController.text.trim());
+                    // authenticationController.createNewUser(
+                    //     authenticationController.profileImage!,
+                    //     authenticationController.ageController.text.trim(),
+                    //     authenticationController.nameController.text
+                    //         .trim()
+                    //         .toUpperCase(),
+                    //     authenticationController.emailController.text.trim(),
+                    //     authenticationController.passwordController.text.trim(),
+                    //     authenticationController.genderController.text
+                    //         .toLowerCase(),
+                    //     authenticationController.phoneController.text.trim(),
+                    //     authenticationController.cityController.text
+                    //         .trim()
+                    //         .toUpperCase(),
+                    //     authenticationController.countryController.text
+                    //         .trim()
+                    //         .toUpperCase(),
+                    //     authenticationController.professionController.text
+                    //         .trim(),
+                    //         auth
+                    //     authenticationController.religionController.text.trim(),
+
+                    //     authenticationController.selectedInterests,
+                    //     authenticationController.bioController.text.trim());
                   } else {
                     Get.snackbar('missing feild', "fill bio and interests");
                   }

@@ -3,9 +3,8 @@ import 'package:date/models/message.dart';
 import 'package:date/view/chat/chat_page.dart';
 import 'package:date/view/chat/new_chat.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'package:intl/intl.dart';
@@ -25,24 +24,46 @@ class _ChatListPageState extends State<ChatListPage> {
   TextEditingController searchController = TextEditingController();
   List<Chat> filteredChats = [];
   List<Chat> allChats = [];
+  List blocklist = [];
   @override
   void initState() {
     super.initState();
     currentUserId = FirebaseAuth.instance.currentUser!.uid;
-    print(currentUserId);
+    retrieveUserInfo();
+  }
+
+  retrieveUserInfo() async {
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(FirebaseAuth.instance.currentUser!.uid)
+        .get()
+        .then((snapshot) {
+      if (snapshot.exists) {
+        setState(() {
+          blocklist = List<String>.from(snapshot.get('blockList') ?? []);
+          print(blocklist);
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Chats'),
+        title: const Text(
+          'Chats',
+          style: TextStyle(color: Colors.pink),
+        ),
         automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [
+          const SizedBox(
+            height: 15,
+          ),
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 20),
+            margin: const EdgeInsets.symmetric(horizontal: 20),
             height: 40,
             child: TextField(
               controller: searchController,
@@ -51,7 +72,7 @@ class _ChatListPageState extends State<ChatListPage> {
                 border:
                     OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 labelText: 'Search Chats',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
               ),
             ),
           ),
@@ -61,20 +82,20 @@ class _ChatListPageState extends State<ChatListPage> {
                   .getChats(FirebaseAuth.instance.currentUser!.uid),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   // Display a user-friendly message when the chat list is empty
-                  print(snapshot.data);
+
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('You have no chats yet.'),
+                        const Text('You have no chats yet.'),
                         ElevatedButton(
                           onPressed: () {
                             Get.to(NewChatPage());
                           },
-                          child: Text('Start a New Chat'),
+                          child: const Text('Start a New Chat'),
                         ),
                       ],
                     ),
@@ -84,7 +105,7 @@ class _ChatListPageState extends State<ChatListPage> {
                   final chats =
                       filteredChats.isNotEmpty ? filteredChats : allChats;
                   return chats.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Text('User not found'),
                         )
                       : ListView.builder(
@@ -115,10 +136,10 @@ class _ChatListPageState extends State<ChatListPage> {
                               builder: (context, userSnapshot) {
                                 if (userSnapshot.connectionState ==
                                     ConnectionState.waiting) {
-                                  return Center(
+                                  return const Center(
                                       child: CircularProgressIndicator());
                                 } else if (!userSnapshot.hasData) {
-                                  return ListTile(
+                                  return const ListTile(
                                     title: Text('Loading...'),
                                   );
                                 } else {
@@ -128,107 +149,146 @@ class _ChatListPageState extends State<ChatListPage> {
                                           as Map<String, dynamic>;
                                   String userName = userData['name'];
                                   String userImage = userData['imageProfile'];
-                                  bool hasContent =
-                                      lastMessage.content.isNotEmpty;
-                                  bool check = lastMessage.type == 'text' &&
-                                      lastMessage.content.isNotEmpty;
-                                  String textToDisplay =
-                                      lastMessage.type == 'text' &&
-                                              lastMessage.content.isNotEmpty
-                                          ? lastMessage.content
-                                          : '';
-                                  if (check &&
-                                      lastMessage.content.length > 10) {
-                                    textToDisplay =
-                                        '${lastMessage.content.substring(0, 20)}...';
-                                  }
+                                  if (blocklist.contains(otherMemberId)) {
+                                    // If the other member is in the blocklist, return an empty SizedBox
+                                    return SizedBox();
+                                  } else {
+                                    bool hasContent =
+                                        lastMessage.content.isNotEmpty;
+                                    bool check = lastMessage.type == 'text' &&
+                                        lastMessage.content.isNotEmpty;
+                                    String textToDisplay =
+                                        lastMessage.type == 'text' &&
+                                                lastMessage.content.isNotEmpty
+                                            ? lastMessage.content
+                                            : '';
+                                    if (check &&
+                                        lastMessage.content.length > 10) {
+                                      textToDisplay =
+                                          '${lastMessage.content.substring(0, 20)}...';
+                                    }
 
-                                  return hasContent
-                                      ? Card(
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(15)),
-                                          elevation: 1,
-                                          margin: EdgeInsets.symmetric(
-                                              horizontal: MediaQuery.of(context)
-                                                      .size
-                                                      .width *
-                                                  .04,
-                                              vertical: 4),
-                                          child: ListTile(
-                                              leading: CircleAvatar(
-                                                backgroundImage:
-                                                    NetworkImage(userImage),
-                                              ),
-                                              title: Text(userName),
-                                              subtitle: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  lastMessage.type == 'text'
-                                                      ? Text(textToDisplay)
-                                                      : lastMessage.senderId ==
-                                                              currentUserId
-                                                          ? Text(
-                                                              'you sent a picture')
-                                                          : Text(
-                                                              'you have a picture'),
-                                                ],
-                                              ),
-                                              trailing: Column(
-                                                children: [
-                                                  Text(formatMessageTimestamp(
-                                                      lastMessage.timestamp
-                                                          .toDate())),
-                                                  chat.seen
-                                                      ? Icon(Icons.done_all,
-                                                          color: Colors
-                                                              .pink) // Seen icon
-                                                      : lastMessage.senderId !=
-                                                              currentUserId
-                                                          ? Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .all(8.0),
-                                                              child: Container(
-                                                                decoration: BoxDecoration(
-                                                                    color: Colors
-                                                                        .pink,
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                            10),
-                                                                    border: Border.all(
+                                    return hasContent
+                                        ? Card(
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(15)),
+                                            elevation: 1,
+                                            margin: EdgeInsets.symmetric(
+                                                horizontal:
+                                                    MediaQuery.of(context)
+                                                            .size
+                                                            .width *
+                                                        .04,
+                                                vertical: 4),
+                                            child: Slidable(
+                                              startActionPane: ActionPane(
+                                                  motion: const StretchMotion(),
+                                                  children: [
+                                                    SlidableAction(
+                                                      onPressed: (context) =>
+                                                          _onDismissed(chat.id),
+                                                      icon: Icons.delete,
+                                                      backgroundColor:
+                                                          Colors.red,
+                                                      label: 'Delete',
+                                                    )
+                                                  ]),
+                                              child: ListTile(
+                                                  leading: CircleAvatar(
+                                                    backgroundImage:
+                                                        NetworkImage(userImage),
+                                                  ),
+                                                  title: Text(userName),
+                                                  subtitle: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      lastMessage.type == 'text'
+                                                          ? Text(textToDisplay)
+                                                          : lastMessage.type ==
+                                                                  "voice"
+                                                              ? lastMessage
+                                                                          .senderId ==
+                                                                      currentUserId
+                                                                  ? const Text(
+                                                                      'you sent a voice')
+                                                                  : const Text(
+                                                                      'you have a voice')
+                                                              : lastMessage
+                                                                          .senderId ==
+                                                                      currentUserId
+                                                                  ? const Text(
+                                                                      'you sent a picture')
+                                                                  : const Text(
+                                                                      'you have a picture'),
+                                                    ],
+                                                  ),
+                                                  trailing: Column(
+                                                    children: [
+                                                      Text(
+                                                          formatMessageTimestamp(
+                                                              lastMessage
+                                                                  .timestamp
+                                                                  .toDate())),
+                                                      chat.seen
+                                                          ? const Icon(
+                                                              Icons.done_all,
+                                                              color: Colors
+                                                                  .pink) // Seen icon
+                                                          : lastMessage
+                                                                      .senderId !=
+                                                                  currentUserId
+                                                              ? Padding(
+                                                                  padding:
+                                                                      const EdgeInsets
+                                                                          .all(
+                                                                          8.0),
+                                                                  child:
+                                                                      Container(
+                                                                    decoration: BoxDecoration(
                                                                         color: Colors
-                                                                            .pink)),
-                                                                child: Text(
-                                                                  'new',
-                                                                  style: TextStyle(
-                                                                      color: Colors
-                                                                          .white),
-                                                                ),
-                                                              ),
-                                                            )
-                                                          : Icon(Icons.done,
-                                                              color:
-                                                                  Colors.grey),
-                                                ],
-                                              ), // Unseen icon
-                                              // Add more details or customize the ListTile as needed
+                                                                            .pink,
+                                                                        borderRadius:
+                                                                            BorderRadius.circular(
+                                                                                10),
+                                                                        border: Border.all(
+                                                                            color:
+                                                                                Colors.pink)),
+                                                                    child:
+                                                                        const Text(
+                                                                      'new',
+                                                                      style: TextStyle(
+                                                                          color:
+                                                                              Colors.white),
+                                                                    ),
+                                                                  ),
+                                                                )
+                                                              : const Icon(
+                                                                  Icons.done,
+                                                                  color: Colors
+                                                                      .grey),
+                                                    ],
+                                                  ), // Unseen icon
+                                                  // Add more details or customize the ListTile as needed
 
-                                              onTap: () => Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          ChatPage(
-                                                        chat: chats[index],
-                                                        currentUserId:
-                                                            currentUserId,
-                                                        uid: otherMemberId,
-                                                      ),
-                                                    ),
-                                                  )),
-                                        )
-                                      : SizedBox();
+                                                  onTap: () => Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              ChatPage(
+                                                            chat: chats[index],
+                                                            currentUserId:
+                                                                currentUserId,
+                                                            uid: otherMemberId,
+                                                          ),
+                                                        ),
+                                                      )),
+                                            ),
+                                          )
+                                        : SizedBox();
+                                  }
                                 }
                               },
                             );
@@ -244,9 +304,13 @@ class _ChatListPageState extends State<ChatListPage> {
         onPressed: () {
           Get.to(NewChatPage());
         },
-        child: Icon(Icons.chat),
+        child: const Icon(Icons.chat),
       ),
     );
+  }
+
+  void _onDismissed(String chatId) async {
+    await _chatController.deleteChat(chatId);
   }
 
   void _filterChats(String query) async {

@@ -1,308 +1,29 @@
-// import 'dart:convert';
-// import 'dart:io';
-
-// import 'package:cached_network_image/cached_network_image.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:date/controller/message_controller.dart';
-// import 'package:date/global.dart';
-// import 'package:date/widgets/chat_bubble.dart';
-// import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
-// // import 'package:flutter_chat_ui/flutter_chat_ui.dart';
-// // import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
-// import 'package:get/get.dart';
-// // import 'package:image_picker/image_picker.dart';
-// // import 'package:file_picker/file_picker.dart';
-// // import 'package:mime/mime.dart';
-// // import 'package:http/http.dart' as http;
-// // import 'package:path_provider/path_provider.dart';
-// // import 'package:open_filex/open_filex.dart';
-// import 'package:http/http.dart' as http;
-// import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
-
-// class ChatPage extends StatefulWidget {
-//   final String uid;
-//   const ChatPage({super.key, required this.uid});
-
-//   @override
-//   State<StatefulWidget> createState() => _ChatPageState();
-// }
-
-// class _ChatPageState extends State<ChatPage> {
-//   final ChatController _chatController = Get.put(ChatController());
-//   final TextEditingController _messageController = TextEditingController();
-//   bool _showemoji = false;
-//   String imageProfile = '';
-//   String name = '';
-//   retrieveUserInfo() async {
-//     await FirebaseFirestore.instance
-//         .collection("users")
-//         .doc(widget.uid)
-//         .get()
-//         .then((snapshot) {
-//       if (snapshot.exists) {
-//         setState(() {
-//           imageProfile = snapshot.data()!["imageProfile"];
-//           name = snapshot.data()!["name"];
-//         });
-//       }
-//     });
-//   }
-
-//   @override
-//   void initState() {
-//     // TODO: implement initState
-//     super.initState();
-//     retrieveUserInfo();
-//   }
-
-//   void sendmessage() async {
-//     if (_messageController.text.isNotEmpty) {
-//       _chatController.sendMessage(widget.uid, _messageController.text);
-//       _messageController.clear();
-//       DocumentSnapshot snap = await FirebaseFirestore.instance
-//           .collection('users')
-//           .doc(widget.uid)
-//           .get();
-//       String token = snap['token'];
-//       setState(() {
-//         _showemoji = false;
-//       });
-//       sendPushMessage(token, _messageController.text, "new message");
-//     }
-//   }
-
-//   void sendPushMessage(String token, String body, String title) async {
-//     try {
-//       await http.post(Uri.parse('https://fcm.googleapis.com/fcm/send'),
-//           headers: <String, String>{
-//             'Content-Type': 'application/json',
-//             'Authorization':
-//                 'key=BB0tx-tOn9-41yqiEjrl8euikMlX4nvL3zpwP_yVtPLDU8tbuXSqJy4kmsIeDZ'
-//           },
-//           body: jsonEncode(<String, dynamic>{
-//             'priority': 'high',
-//             'data': <String, dynamic>{
-//               'click_action': 'FLUTTER_NOTIFICATION_CLICK',
-//               'status': 'done',
-//               'body': body,
-//               'title': title
-//             },
-//             'notification': <String, dynamic>{
-//               'title': title,
-//               "body": body,
-//               'android_channel_id': "dbfood"
-//             },
-//             "to": token
-//           }));
-//     } catch (err) {}
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return GestureDetector(
-//       onTap: () => FocusScope.of(context).unfocus(),
-//       child: SafeArea(
-//         child: WillPopScope(
-//           onWillPop: () {
-//             if (_showemoji) {
-//               setState(() {
-//                 _showemoji = !_showemoji;
-//               });
-//               return Future.value(false);
-//             } else {
-//               return Future.value(true);
-//             }
-//           },
-//           child: Scaffold(
-//               appBar: AppBar(
-//                 automaticallyImplyLeading: false,
-//                 flexibleSpace: _appBar(),
-//               ),
-//               body: Column(
-//                 children: [
-//                   Expanded(child: _buildMessageList()),
-//                   _buildMessageInput(),
-//                   if (_showemoji)
-//                     SizedBox(
-//                       height: MediaQuery.of(context).size.height * .35,
-//                       child: EmojiPicker(
-//                         textEditingController: _messageController,
-//                         config: Config(
-//                             columns: 7,
-//                             emojiSizeMax: 32 * (Platform.isIOS ? 1.30 : 1)),
-//                       ),
-//                     )
-//                 ],
-//               )),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _appBar() {
-//     return Row(
-//       crossAxisAlignment: CrossAxisAlignment.center,
-//       children: [
-//         IconButton(
-//             onPressed: () {
-//               Get.back();
-//             },
-//             icon: Icon(
-//               Icons.arrow_back,
-//               color: Colors.black54,
-//             )),
-//         SizedBox(
-//           width: 10,
-//         ),
-//         ClipRRect(
-//           borderRadius:
-//               BorderRadius.circular(MediaQuery.of(context).size.height * .3),
-//           child: CachedNetworkImage(
-//             width: MediaQuery.of(context).size.height * .05,
-//             height: MediaQuery.of(context).size.height * .05,
-//             imageUrl: imageProfile,
-//             errorWidget: (context, url, error) => const CircleAvatar(
-//               child: Icon(CupertinoIcons.person),
-//             ),
-//           ),
-//         ),
-//         SizedBox(
-//           width: 10,
-//         ),
-//         Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: [
-//             Text(
-//               name,
-//               style: TextStyle(
-//                   fontSize: 16,
-//                   color: Colors.black54,
-//                   fontWeight: FontWeight.w500),
-//             )
-//           ],
-//         )
-//       ],
-//     );
-//   }
-
-//   Widget _buildMessageList() {
-//     return StreamBuilder(
-//         stream: _chatController.getMessages(currentUserID),
-//         builder: (context, snapshot) {
-//           if (snapshot.hasError) {
-//             return Text('Error${snapshot.error}');
-//           }
-//           if (snapshot.connectionState == ConnectionState.waiting) {
-//             return const Text('Loading');
-//           }
-//           return ListView(
-//             children: snapshot.data!.docs
-//                 .map((document) => _buildMessageItem(document))
-//                 .toList(),
-//           );
-//         });
-//   }
-
-//   Widget _buildMessageItem(DocumentSnapshot document) {
-//     Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-//     var alignment = (data['senderId'] == currentUserID)
-//         ? Alignment.centerRight
-//         : Alignment.centerLeft;
-//     return Container(
-//         alignment: alignment,
-//         child: Padding(
-//           padding: EdgeInsets.all(8),
-//           child: Column(
-//               crossAxisAlignment: (data['senderId'] == currentUserID)
-//                   ? CrossAxisAlignment.end
-//                   : CrossAxisAlignment.start,
-//               mainAxisAlignment: (data['senderId'] == currentUserID)
-//                   ? MainAxisAlignment.end
-//                   : MainAxisAlignment.start,
-//               children: [ChatBubble(message: data['message'])]),
-//         ));
-//   }
-
-//   Widget _buildMessageInput() {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(horizontal: 25.0),
-//       child: Card(
-//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-//         child: Row(
-//           children: [
-//             IconButton(
-//                 onPressed: () {
-//                   setState(() {
-//                     _showemoji = !_showemoji;
-//                   });
-//                 },
-//                 icon: Icon(
-//                   Icons.emoji_emotions,
-//                 )),
-//             Expanded(
-//                 child: TextField(
-//               onTap: () {
-//                 if (_showemoji)
-//                   setState(() {
-//                     _showemoji = !_showemoji;
-//                   });
-//               },
-//               keyboardType: TextInputType.multiline,
-//               decoration: InputDecoration(hintText: 'Type something'),
-//               controller: _messageController,
-//               obscureText: false,
-//             )),
-//             IconButton(onPressed: () {}, icon: Icon(Icons.image)),
-//             IconButton(onPressed: () {}, icon: Icon(Icons.camera_alt_rounded)),
-//             MaterialButton(
-//               padding: EdgeInsets.only(top: 10, bottom: 10, right: 5, left: 10),
-//               shape: CircleBorder(),
-//               onPressed: sendmessage,
-//               child: Icon(
-//                 Icons.send,
-//                 color: Colors.white,
-//                 size: 25,
-//               ),
-//             )
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:bilions_ui/bilions_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:intl/intl.dart';
-import 'package:gallery_saver/gallery_saver.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record_mp3/record_mp3.dart';
 import '../../controller/audio_controller.dart';
 import '../../controller/message_controller.dart';
+import '../../controller/profile_controller.dart';
 import '../../models/chat.dart';
 import '../../models/message.dart';
-import '../../widgets/chat_bubble.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_sound/flutter_sound.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:audioplayers/audioplayers.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class ChatPage extends StatefulWidget {
   final Chat chat;
@@ -319,36 +40,32 @@ class ChatPage extends StatefulWidget {
   _ChatPageState createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ChatController _chatController = ChatController();
   bool _showEmojiPicker = false, _isUploading = false;
   String imageProfile = '';
   String name = '';
   String token = '';
-  late FlutterSoundRecorder _audioRecorder;
-  bool _isRecording = false;
-  String _recordingPath = '';
-  String? _currentAudioUrl;
+  bool status = false;
+
   bool isCurrentlyPlaying = false;
-  AudioPlayer _audioPlayer = AudioPlayer();
   AudioPlayer audioPlayer = AudioPlayer();
-  bool _isUploaded = false;
   ScrollController _scrollController = new ScrollController();
   AudioController audioController = Get.put(AudioController());
   final FocusNode focusNode = FocusNode();
   String audioURL = "";
-
+  final ProfileController _profileController = ProfileController();
   int _limit = 20;
   int _limitIncrement = 20;
   List<QueryDocumentSnapshot> listMessage = [];
-  void _initialize() async {
-    try {
-      await _audioRecorder.openAudioSession();
-    } catch (e) {
-      print('Error initializing recorder: $e');
-    }
-  }
+  // void _initialize() async {
+  //   try {
+  //     await _audioRecorder.openAudioSession();
+  //   } catch (e) {
+  //     print('Error initializing recorder: $e');
+  //   }
+  // }
 
   void _scrollToBottom() {
     // if (_scrollController.hasClients) {
@@ -368,6 +85,21 @@ class _ChatPageState extends State<ChatPage> {
       }
     }
     return true;
+  }
+
+  void setStatus(bool status) async {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.currentUserId)
+        .update({"online": status});
+  }
+
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setStatus(true);
+    } else {
+      setStatus(false);
+    }
   }
 
   void startRecord() async {
@@ -418,7 +150,7 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         audioController.isSending.value = false;
         _chatController.sendMessageWithVoice(widget.chat.id,
-            widget.currentUserId, strVal, audioController.total);
+            widget.currentUserId, strVal, audioController.total, token);
       });
     } on FirebaseException catch (e) {
       setState(() {
@@ -429,63 +161,6 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   late String recordFilePath;
-  // Future<void> _startRecording() async {
-  //   try {
-  //     if (!_isRecording) {
-  //       Directory tempDir = await getTemporaryDirectory();
-  //       _recordingPath =
-  //           '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.aac';
-  //       await _audioRecorder.startRecorder(
-  //         toFile: _recordingPath,
-  //         codec: Codec.aacADTS,
-  //       );
-  //       setState(() {
-  //         _isRecording = true;
-  //       });
-  //     }
-  //   } catch (e) {
-  //     print('Error starting recording: $e');
-  //   }
-  // }
-
-  // Future<void> _stopRecording() async {
-  //   if (_isRecording) {
-  //     try {
-  //       final path = await _audioRecorder.stopRecorder();
-  //       final downloadURL = await _uploadToFirebase(); // Get download URL
-  //       print('Download URL: $downloadURL');
-  //       setState(() {
-  //         _isRecording = false;
-  //         _recordingPath = path ?? '';
-  //       });
-  //     } catch (err) {
-  //       print('Failed to stop recording: $err');
-  //     }
-  //   }
-  // }
-
-  Future<String> _uploadToFirebase() async {
-    try {
-      final File file = File(_recordingPath);
-      final fileName = file.path.split('/').last;
-      final firebase_storage.Reference ref =
-          firebase_storage.FirebaseStorage.instance.ref().child(fileName);
-      final uploadTask = ref.putFile(file);
-
-      // Wait for the upload to complete and then get the download URL
-      final snapshot = await uploadTask.whenComplete(() {});
-      final downloadURL = await snapshot.ref.getDownloadURL();
-
-      setState(() {
-        _isUploaded = true;
-      });
-
-      return downloadURL;
-    } catch (err) {
-      print('Failed to upload recording: $err');
-      return ''; // Return empty string if upload fails
-    }
-  }
 
   retrieveUserInfo() async {
     print('user widget:$widget.uid');
@@ -499,6 +174,7 @@ class _ChatPageState extends State<ChatPage> {
           imageProfile = snapshot.data()!["imageProfile"];
           name = snapshot.data()!["name"];
           token = snapshot.data()!['userDeviceToken'];
+          status = snapshot.data()!['online'];
         });
       }
     });
@@ -511,8 +187,6 @@ class _ChatPageState extends State<ChatPage> {
     retrieveUserInfo();
 
     _chatController.updateSeenStatusOnChatEnter(widget.chat.id);
-    _audioRecorder = FlutterSoundRecorder();
-    _initialize();
 
     _scrollController = ScrollController();
     _scrollController.addListener(_scrollListener);
@@ -554,6 +228,26 @@ class _ChatPageState extends State<ChatPage> {
                 },
                 child: Scaffold(
                   appBar: AppBar(
+                    actions: [
+                      PopupMenuButton(
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry>[
+                          PopupMenuItem(
+                            onTap: () async {
+                              await _profileController
+                                  .retrieveUserInfo(widget.uid);
+                              alert(
+                                context,
+                                'Block User',
+                                'It blocked succeeded',
+                                variant: Variant.warning,
+                              );
+                            },
+                            value: 'Option 1',
+                            child: const Text('Block'),
+                          ),
+                        ],
+                      ),
+                    ],
                     automaticallyImplyLeading: false,
                     flexibleSpace: _appBar(),
                     leading: InkWell(
@@ -620,11 +314,11 @@ class _ChatPageState extends State<ChatPage> {
             onPressed: () {
               Get.back();
             },
-            icon: Icon(
+            icon: const Icon(
               Icons.arrow_back,
               color: Colors.black54,
             )),
-        SizedBox(
+        const SizedBox(
           width: 10,
         ),
         ClipRRect(
@@ -639,7 +333,7 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
         ),
-        SizedBox(
+        const SizedBox(
           width: 10,
         ),
         Column(
@@ -647,13 +341,22 @@ class _ChatPageState extends State<ChatPage> {
           children: [
             Text(
               name,
-              style: TextStyle(
+              style: const TextStyle(
                   fontSize: 16,
                   color: Colors.black54,
                   fontWeight: FontWeight.w500),
-            )
+            ),
+            status == true
+                ? Text(
+                    'Online',
+                    style: TextStyle(color: Colors.blueAccent),
+                  )
+                : Text(
+                    'Offline',
+                    style: TextStyle(color: Colors.black),
+                  )
           ],
-        )
+        ),
       ],
     );
   }
@@ -663,11 +366,11 @@ class _ChatPageState extends State<ChatPage> {
       stream: _chatController.getMessages(widget.chat.id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text('No Messages Yet'));
+          return const Center(child: Text('No Messages Yet'));
         }
         // listMessage = snapshot.data.length;
 
@@ -695,7 +398,7 @@ class _ChatPageState extends State<ChatPage> {
                 child: Container(
                     alignment: alignment,
                     child: Padding(
-                      padding: EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       child: Column(
                           crossAxisAlignment: (messages[index].senderId ==
                                   FirebaseAuth.instance.currentUser!.uid)
@@ -717,7 +420,7 @@ class _ChatPageState extends State<ChatPage> {
                                                 .toDate()) ==
                                         DateFormat('MMMM dd').format(
                                             messages[index].timestamp.toDate())
-                                    ? Text('')
+                                    ? const Text('')
                                     : Center(
                                         child: Padding(
                                           padding: const EdgeInsets.all(8.0),
@@ -729,7 +432,7 @@ class _ChatPageState extends State<ChatPage> {
                                       ),
                             messages[index].type == 'text'
                                 ? Container(
-                                    padding: EdgeInsets.all(8),
+                                    padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(13),
                                         color: (messages[index].senderId ==
@@ -739,7 +442,7 @@ class _ChatPageState extends State<ChatPage> {
                                             : Colors.pinkAccent),
                                     child: Text(
                                       messages[index].content,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           fontSize: 16, color: Colors.white),
                                     ),
                                   )
@@ -775,12 +478,12 @@ class _ChatPageState extends State<ChatPage> {
                             Text(DateFormat('hh:mm a')
                                 .format(messages[index].timestamp.toDate())),
                             messages[index].seen
-                                ? Icon(
+                                ? const Icon(
                                     Icons.done_all_rounded,
                                     color: Colors.blue,
                                     size: 20,
                                   )
-                                : Icon(
+                                : const Icon(
                                     Icons.done,
                                     color: Colors.blue,
                                     size: 20,
@@ -818,7 +521,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
               type == "text"
                   ? OptionsItem(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.copy_all_outlined,
                         color: Colors.blue,
                         size: 26,
@@ -832,7 +535,7 @@ class _ChatPageState extends State<ChatPage> {
                         });
                       })
                   : OptionsItem(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.download_rounded,
                         color: Colors.blue,
                       ),
@@ -855,9 +558,9 @@ class _ChatPageState extends State<ChatPage> {
                         }
                       },
                     ),
-              Divider(),
+              const Divider(),
               OptionsItem(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.delete_forever,
                     color: Colors.red,
                     size: 26,
@@ -878,7 +581,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildMessageInput() {
     return Padding(
-      padding: EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8.0),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
@@ -887,13 +590,31 @@ class _ChatPageState extends State<ChatPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            GestureDetector(
+              child: const Icon(Icons.mic, color: Colors.pink),
+              onLongPress: () async {
+                var audioPlayer = AudioPlayer();
+                await audioPlayer.play(AssetSource("Notification.mp3"));
+                audioPlayer.onPlayerComplete.listen((a) {
+                  audioController.start.value = DateTime.now();
+                  startRecord();
+                  audioController.isRecording.value = true;
+                });
+              },
+              onLongPressEnd: (details) {
+                stopRecord();
+              },
+            ),
+            const SizedBox(
+              width: 3,
+            ),
             Expanded(
               child: TextField(
                 controller: _messageController,
                 decoration: InputDecoration(
                   hintText: 'Enter message',
                   suffixIcon: IconButton(
-                    icon: Icon(Icons.emoji_emotions),
+                    icon: const Icon(Icons.emoji_emotions),
                     onPressed: () {
                       setState(() {
                         _showEmojiPicker =
@@ -910,30 +631,13 @@ class _ChatPageState extends State<ChatPage> {
                   // setState(() {
                   //   _isUploading = true;
                   // });
-                  await _chatController.sendMessageWithImage(
-                    widget.chat.id,
-                    FirebaseAuth.instance.currentUser!.uid,
-                  );
+                  await _chatController.sendMessageWithImage(widget.chat.id,
+                      FirebaseAuth.instance.currentUser!.uid, token);
                   // setState(() {
                   //   _isUploading = false;
                   // });
                 },
-                icon: Icon(Icons.image, color: Colors.blueAccent)),
-            GestureDetector(
-              child: Icon(Icons.mic, color: Colors.pink),
-              onLongPress: () async {
-                var audioPlayer = AudioPlayer();
-                await audioPlayer.play(AssetSource("Notification.mp3"));
-                audioPlayer.onPlayerComplete.listen((a) {
-                  audioController.start.value = DateTime.now();
-                  startRecord();
-                  audioController.isRecording.value = true;
-                });
-              },
-              onLongPressEnd: (details) {
-                stopRecord();
-              },
-            ),
+                icon: const Icon(Icons.image, color: Colors.blueAccent)),
             ElevatedButton(
               onPressed: () {
                 if (_messageController.text.trim().isNotEmpty) {
@@ -952,7 +656,7 @@ class _ChatPageState extends State<ChatPage> {
                   backgroundColor: Colors.pink,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16))),
-              child: Text(
+              child: const Text(
                 'Send',
                 style: TextStyle(color: Colors.white),
               ),
@@ -961,20 +665,6 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
     );
-  }
-
-  String _formatDuration(Duration? duration) {
-    if (duration == null) return '--:--';
-
-    int hours = duration.inHours;
-    int minutes = duration.inMinutes.remainder(60);
-    int seconds = duration.inSeconds.remainder(60);
-
-    String hoursStr = (hours < 10) ? '0$hours' : '$hours';
-    String minutesStr = (minutes < 10) ? '0$minutes' : '$minutes';
-    String secondsStr = (seconds < 10) ? '0$seconds' : '$seconds';
-
-    return '$hoursStr:$minutesStr:$secondsStr';
   }
 
   Widget _buildEmojiPicker() {
@@ -997,7 +687,7 @@ class _ChatPageState extends State<ChatPage> {
   }) {
     return Container(
       width: MediaQuery.of(context).size.width * 0.5,
-      padding: EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: isCurrentUser ? Colors.pink : Colors.pink.withOpacity(0.18),
         borderRadius: BorderRadius.circular(10),
@@ -1051,7 +741,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
           ),
-          SizedBox(
+          const SizedBox(
             width: 10,
           ),
           // Text(
