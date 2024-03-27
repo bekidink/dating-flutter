@@ -2,7 +2,11 @@ plugins {
     id "com.android.application"
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
+    
+
 }
+
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -21,20 +25,24 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+
 android {
     namespace "com.example.date"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
-
+   
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+       sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
-
+ kotlin {
+        jvmToolchain(17)
+    }
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
@@ -55,6 +63,8 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.debug
+            shrinkResources true
+            minifyEnabled true
         }
     }
 }
@@ -64,6 +74,7 @@ flutter {
 }
 
 dependencies {
+    
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation 'com.google.firebase:firebase-appcheck-safetynet:16.0.0'
     implementation("com.google.firebase:firebase-auth")
@@ -71,5 +82,7 @@ dependencies {
     implementation("com.google.firebase:firebase-appcheck-playintegrity")
     // Also add the dependency for the Google Play services library and specify its version
     implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation 'com.stripe:financial-connections:20.40.1' // Use a specific version
+    implementation 'com.stripe:stripe-android:20.40.1'
 }
 apply plugin: 'com.google.gms.google-services'

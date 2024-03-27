@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record_mp3/record_mp3.dart';
@@ -56,7 +55,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   final FocusNode focusNode = FocusNode();
   String audioURL = "";
   final ProfileController _profileController = ProfileController();
-  int _limit = 20;
+  int _limit = 100;
   int _limitIncrement = 20;
   List<QueryDocumentSnapshot> listMessage = [];
   // void _initialize() async {
@@ -69,11 +68,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
 
   void _scrollToBottom() {
     // if (_scrollController.hasClients) {
-    _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent + 300,
-      duration: const Duration(milliseconds: 30),
-      curve: Curves.easeInOut,
-    );
+    _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
     // }
   }
 
@@ -94,6 +89,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         .update({"online": status});
   }
 
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       setStatus(true);
@@ -141,23 +137,22 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   }
 
   uploadAudio() async {
-    UploadTask uploadTask = _chatController.uploadAudio(File(recordFilePath),
-        "audio/${DateTime.now().millisecondsSinceEpoch.toString()}");
-    try {
-      TaskSnapshot snapshot = await uploadTask;
-      audioURL = await snapshot.ref.getDownloadURL();
-      String strVal = audioURL.toString();
-      setState(() {
-        audioController.isSending.value = false;
-        _chatController.sendMessageWithVoice(widget.chat.id,
-            widget.currentUserId, strVal, audioController.total, token);
-      });
-    } on FirebaseException catch (e) {
-      setState(() {
-        audioController.isSending.value = false;
-      });
-      // Fluttertoast.showToast(msg: e.message ?? e.toString());
+    final recordFile = File(recordFilePath);
+
+    // Check audio file size before upload
+    if (recordFile.lengthSync() > 5 * 1024 * 1024) {
+      // Check for 5MB size limit (adjust as needed)
+      // Display a message indicating the file is too large
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Audio file exceeds 5MB limit.")),
+      );
+      return; // Exit the function if file size is too large
     }
+
+    // Continue with upload process as usual
+    UploadTask uploadTask = _chatController.uploadAudio(recordFile,
+        "audio/${DateTime.now().millisecondsSinceEpoch.toString()}");
+    // ... existing upload and error handling code ...
   }
 
   late String recordFilePath;
@@ -187,9 +182,12 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     retrieveUserInfo();
 
     _chatController.updateSeenStatusOnChatEnter(widget.chat.id);
-
-    _scrollController = ScrollController();
-    _scrollController.addListener(_scrollListener);
+    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Use the ScrollController after the frame is drawn
+      _scrollController = ScrollController();
+      _scrollController.addListener(_scrollListener);
+    });
   }
 
   _scrollListener() {
@@ -233,13 +231,24 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                         itemBuilder: (BuildContext context) => <PopupMenuEntry>[
                           PopupMenuItem(
                             onTap: () async {
-                              await _profileController
-                                  .retrieveUserInfo(widget.uid);
-                              alert(
+                              confirm(
                                 context,
-                                'Block User',
-                                'It blocked succeeded',
-                                variant: Variant.warning,
+                                ConfirmDialog(
+                                  'Are you sure to block?',
+                                  message: 'It going to block?',
+                                  variant: Variant.warning,
+                                  confirmed: () async {
+                                    // do something here
+                                    await _profileController
+                                        .retrieveUserInfo(widget.uid);
+                                    alert(
+                                      context,
+                                      'Block User',
+                                      'It blocked succeeded',
+                                      variant: Variant.warning,
+                                    );
+                                  },
+                                ),
                               );
                             },
                             value: 'Option 1',
@@ -296,9 +305,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                           height: MediaQuery.of(context).size.height * .35,
                           child: EmojiPicker(
                             textEditingController: _messageController,
-                            config: Config(
-                                columns: 7,
-                                emojiSizeMax: 32 * (Platform.isIOS ? 1.30 : 1)),
+                            config: Config(),
                           ),
                         )
                     ],
@@ -546,7 +553,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                               await http.get(Uri.parse(imageProfile));
                           Uint8List bytes = response.bodyBytes;
 
-                          await ImageGallerySaver.saveImage(bytes);
+                          // await ImageGallerySaver.saveImage(bytes);
 
                           // Show a success message
                           Get.snackbar("Image Download",
@@ -665,17 +672,6 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         ),
       ),
     );
-  }
-
-  Widget _buildEmojiPicker() {
-    return _showEmojiPicker
-        ? EmojiPicker(
-            textEditingController: _messageController,
-            config: Config(
-                columns: 7, emojiSizeMax: 32 * (Platform.isIOS ? 1.30 : 1)),
-          )
-        : SizedBox
-            .shrink(); // Returns an empty widget if emoji picker is not shown
   }
 
   Widget _audio({

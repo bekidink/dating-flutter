@@ -82,6 +82,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../models/chat.dart';
 import '../models/message.dart';
+import '../models/person.dart';
 
 class ChatController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -131,14 +132,33 @@ class ChatController {
   }
 
   Future<String> uploadImageToStorage(File imageFile) async {
-    Reference reference = FirebaseStorage.instance
-        .ref()
-        .child("profile Images")
-        .child(FirebaseAuth.instance.currentUser!.uid);
-    UploadTask task = reference.putFile(imageFile);
-    TaskSnapshot snapshot = await task;
-    String downloadUrlOfImage = await snapshot.ref.getDownloadURL();
-    return downloadUrlOfImage;
+    try {
+      // Check file size before upload
+      if (imageFile.lengthSync() > 4 * 1024 * 1024) {
+        return "";
+      } else {
+        Reference reference = FirebaseStorage.instance
+            .ref()
+            .child("profile Images")
+            .child(FirebaseAuth.instance.currentUser!.uid);
+
+        UploadTask task = reference.putFile(imageFile);
+
+        // Monitor upload progress
+        task.snapshotEvents.listen((TaskSnapshot snapshot) {
+          double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          print("Upload progress: ${(progress * 100).toStringAsFixed(2)}%");
+        });
+
+        TaskSnapshot snapshot = await task;
+        String downloadUrlOfImage = await snapshot.ref.getDownloadURL();
+        return downloadUrlOfImage;
+      }
+    } catch (e) {
+      print("Upload error: $e");
+      // Handle upload errors appropriately, e.g., display user-friendly messages
+      return '';
+    }
   }
 
   Future<void> sendMessageWithImage(
@@ -146,35 +166,39 @@ class ChatController {
     try {
       // Reference to the specific collection of messages within the chat
       String urlOfDownloadedImage = await uploadImageToStorage(profileImage!);
+      if (urlOfDownloadedImage != '') {
+        CollectionReference messagesCollection =
+            _firestore.collection('chats').doc(chatId).collection('messages');
 
-      CollectionReference messagesCollection =
-          _firestore.collection('chats').doc(chatId).collection('messages');
+        // Add the new message to the collection and get the automatically generated ID
+        DocumentReference newMessageRef = await messagesCollection.add({
+          'content': urlOfDownloadedImage,
+          'type': 'image',
+          'seen': false,
+          'senderId': senderId,
+          'timestamp': Timestamp.fromDate(DateTime.now().toUtc()),
+          'duration': ''
+        });
 
-      // Add the new message to the collection and get the automatically generated ID
-      DocumentReference newMessageRef = await messagesCollection.add({
-        'content': urlOfDownloadedImage,
-        'type': 'image',
-        'seen': false,
-        'senderId': senderId,
-        'timestamp': Timestamp.fromDate(DateTime.now().toUtc()),
-        'duration': ''
-      });
+        // Get the automatically generated message ID
+        String messageId = newMessageRef.id;
+        Message newMessage = Message(
+            id: newMessageRef.id,
+            content: urlOfDownloadedImage,
+            seen: false,
+            type: 'image',
+            senderId: FirebaseAuth.instance.currentUser!.uid,
+            timestamp: Timestamp.now(),
+            duration: '');
 
-      // Get the automatically generated message ID
-      String messageId = newMessageRef.id;
-      Message newMessage = Message(
-          id: newMessageRef.id,
-          content: urlOfDownloadedImage,
-          seen: false,
-          type: 'image',
-          senderId: FirebaseAuth.instance.currentUser!.uid,
-          timestamp: Timestamp.now(),
-          duration: '');
-
-      final name =
-          getUserNameFromMemberId(FirebaseAuth.instance.currentUser!.uid);
-      await addMessageToChat(chatId, newMessage);
-      sendPushNotification(token, name, 'have image');
+        final name =
+            getUserNameFromMemberId(FirebaseAuth.instance.currentUser!.uid);
+        await addMessageToChat(chatId, newMessage);
+        sendPushNotification(token, name, 'have image');
+      } else {
+        Get.snackbar(
+            "Profile Image", "Your image exceed 4mb.please choice low.");
+      }
     } catch (error) {
       print('Error adding message: $error');
       throw error; // Handle the error as per your requirement
@@ -471,23 +495,37 @@ class ChatController {
     String currentUserId,
   ) async {
     try {
-      QuerySnapshot usersSnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
+      DocumentSnapshot currentUserDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUserId)
+          .get();
+      String currentGender = currentUserDoc['gender'];
+      String currentLookingFor = currentUserDoc['lookingFor'];
 
+      QuerySnapshot usersSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where("lookingFor", isEqualTo: currentLookingFor.toString())
+          .get();
+      print(usersSnapshot);
       List<Map<String, dynamic>?> usersList = [];
 
       for (QueryDocumentSnapshot userDoc in usersSnapshot.docs) {
         if (userDoc.id != currentUserId) {
           // Check if the current user does not have a chat with this user
-          bool doesNotHaveChat =
-              await currentUserDoesNotHaveChat(currentUserId, userDoc.id);
+          var person = Person.fromDataSnapshot(userDoc);
 
-          if (doesNotHaveChat) {
-            usersList.add({
-              'id': userDoc.id,
-              'name': userDoc['name'],
-              'imageProfile': userDoc['imageProfile'],
-            });
+          // Apply additional filtering based on 'gender'
+          if (person.gender!.toLowerCase() != currentGender.toLowerCase()) {
+            bool doesNotHaveChat =
+                await currentUserDoesNotHaveChat(currentUserId, userDoc.id);
+
+            if (doesNotHaveChat) {
+              usersList.add({
+                'id': userDoc.id,
+                'name': userDoc['name'],
+                'imageProfile': userDoc['imageProfile'],
+              });
+            }
           }
         }
       }
