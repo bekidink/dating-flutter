@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:get/get.dart';
 
+import 'firebase_config.dart';
 import 'view/auth/AuthScreen.dart';
 import 'view/home/home_screen.dart';
 
@@ -21,12 +22,7 @@ Future<void> main() async {
       "pk_test_51OFYhgD9rzaCJql7AjrTQ62gcDfKB7qv0Gh5zbzfuBv0HRrsylwGUh5eHiuMHtwanajw6iMxLYPGud7km1m3oHbH007AjXB7X9";
   await Stripe.instance.applySettings();
   await Firebase.initializeApp(
-          options: const FirebaseOptions(
-              apiKey: "AIzaSyD3kxU-VND-wSKYFc_pxgPUR72ByT0NPdM",
-              appId: "1:832945625672:android:a96b7bf5f05db854b7967d",
-              messagingSenderId: "832945625672",
-              projectId: "date-50347",
-              storageBucket: "date-50347.appspot.com"))
+          options: DefaultFirebaseOptions.currentPlatform)
       .then((value) {
     Get.put(AuthenticationController());
   });
@@ -46,7 +42,7 @@ class MyApp extends StatelessWidget {
     return const GetMaterialApp(
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
-      home: HomeScreen(),
+      home: AuthScreen(),
     );
   }
 }

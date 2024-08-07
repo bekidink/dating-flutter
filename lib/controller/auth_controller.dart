@@ -217,18 +217,20 @@ class AuthenticationController extends GetxController {
     final cred =
         PhoneAuthProvider.credential(verificationId: verifyId, smsCode: otp);
     try {
-      final bool isUserRegistered = await isRegisteredUser(cred.providerId);
-      if (isUserRegistered) {
+      
+      
         final user = await _firebaseAuth.signInWithCredential(cred);
         if (user.user != null) {
           // return "Success";
+          final bool isUserRegistered = await isRegisteredUser(user.user!.uid);
+          if(isUserRegistered){
           Get.to(const HomeScreen());
+
+          }
         } else {
           return "Error ";
         }
-      } else {
-        return "NotRegistered";
-      }
+      
     } on FirebaseAuthException catch (e) {
       return e.message.toString();
     } catch (e) {

@@ -50,7 +50,9 @@ class _SignUpState extends State<SignUp> {
         }
 
         print(userDetails.uid);
-      } on FirebaseAuthException catch (e) {}
+      } on FirebaseAuthException catch (e) {
+        print(e.toString());
+      }
     } else {
       alert(
         context,

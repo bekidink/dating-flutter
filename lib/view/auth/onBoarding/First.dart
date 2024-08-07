@@ -142,6 +142,7 @@ class _FirstPageState extends State<FirstPage> {
               const SizedBox(
                 height: 25,
               ),
+              Text('bio'),
               SizedBox(
                 width: MediaQuery.of(context).size.width - 40,
                 height: 150,
